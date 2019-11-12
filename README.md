@@ -1,3 +1,19 @@
+getmyancestors (forked)
+==============
+- This repository has been forked from project **Linekio/getmyanscestors** version Aug 26, 2019 (commit f32eb13).
+- Change Nr.1 : Code fixes for bugs found during analysis of the existing software.
+  - Max persons changed from 200 to 500
+  - API change(?) for "childAndParentsRelationships": replace father with parent1, mother with parent2
+  - Tested on a MacBook OSX 10.11.6
+- Change Nr.2 (pending): file system bug, files not closed when running in cli mode.
+- Planned: 
+  - Lists (database) of ancestors, including the last change dates of the source records.
+  - Comparison of lists enables users to detect new and/or deleted ancestors.
+  - 3 types of ancestors:
+    - Patriline ("father line") is a person's father, and additional ancestors, as traced only through males. 
+    - Matriline ("mother line") is a person's mother, and additional ancestors, as traced only through females.
+    - Bioline ("biological line") is a persons father and mother, and additional ancestors (traced through males and females).
+
 getmyancestors
 ==============
 

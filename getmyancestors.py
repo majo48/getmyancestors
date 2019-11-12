@@ -45,7 +45,7 @@ except ImportError:
     sys.exit(2)
 
 # is subject to change: see https://www.familysearch.org/developers/docs/api/tree/Persons_resource
-MAX_PERSONS = 200
+MAX_PERSONS = 500
 
 FACT_TAGS = {
     "http://gedcomx.org/Birth": "BIRT",
@@ -877,8 +877,8 @@ class Tree:
                 loop.run_until_complete(add_datas(loop, data))
                 if "childAndParentsRelationships" in data:
                     for rel in data["childAndParentsRelationships"]:
-                        father = rel["father"]["resourceId"] if "father" in rel else None
-                        mother = rel["mother"]["resourceId"] if "mother" in rel else None
+                        father = rel["parent1"]["resourceId"] if "parent1" in rel else None
+                        mother = rel["parent2"]["resourceId"] if "parent2" in rel else None
                         child = rel["child"]["resourceId"] if "child" in rel else None
                         if child in self.indi:
                             self.indi[child].parents.add((father, mother))
