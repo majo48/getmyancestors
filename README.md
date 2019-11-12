@@ -5,14 +5,14 @@ getmyancestors (forked)
   - Max persons changed from 200 to 500
   - API change(?) for "childAndParentsRelationships": replace father with parent1, mother with parent2
   - Tested on a MacBook OSX 10.11.6
-- Change Nr.2 (pending): file system bug, files not closed when running in cli mode.
-- Planned: 
+- Change Nr.2 : Updated README.MD for Mac OSX fully qualified filenames.
+- Plan: 
   - Lists (database) of ancestors, including the last change dates of the source records.
-  - Comparison of lists enables users to detect new and/or deleted ancestors.
-  - 3 types of ancestors:
+  - Comparison of lists, enables users to detect changed, new and/or deleted ancestors in familysearch.org.
+  - 3 types of ancestors (choices):
     - Patriline ("father line") is a person's father, and additional ancestors, as traced only through males. 
     - Matriline ("mother line") is a person's mother, and additional ancestors, as traced only through females.
-    - Bioline ("biological line") is a persons father and mother, and additional ancestors (traced through males and females).
+    - Bioline ("biological line") is a persons father and mother, and additional ancestors, as traced through males and females.
 
 getmyancestors
 ==============
@@ -64,6 +64,7 @@ Download four generations of ancestors and output gedcom to a file while generat
 ```
 python3 getmyancestors.py -o out.ged -v
 ```
+**Note for Mac OSX:** use fully qualified filenames (e.g. /Users/mart/Desktop/out.ged), otherwise your out.ged disappears.
 
 Download four generations of ancestors for individual LF7T-Y4C and generate a verbose log file:
 
