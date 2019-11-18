@@ -36,7 +36,7 @@ import getpass
 def get_arguments():
     """ function: get all arguments from the command line
        :return: {Namespace}
-            individual(str},
+            individual{str},
             outfile{TextIOWrapper},
             password{str},
             type{str},
@@ -93,7 +93,6 @@ def get_arguments():
     #
     # extract arguments from the command line
     try:
-        parser.error = parser.exit
         args = parser.parse_args()
     except:
         parser.print_help()
