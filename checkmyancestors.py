@@ -33,8 +33,15 @@ import getpass
 # getmyancestor project imports
 #
 
-# main, file checkmyancestors.py
-def main():
+def get_arguments():
+    """ function: get all arguments from the command line
+       :return: {Namespace}
+            individual(str},
+            outfile{TextIOWrapper},
+            password{str},
+            type{str},
+            username{str}
+    """
     parser = argparse.ArgumentParser(
         description="Retrieve GEDCOM data from FamilySearch Tree (4 Jul 2016)",
         add_help=False,
@@ -56,7 +63,7 @@ def main():
     )
     parser.add_argument(
         "-i",
-        "--individuals",
+        "--individual",
         metavar="<STR>",
         type=str,
         help="FamilySearch ID for whom to retrieve ancestors",
@@ -97,9 +104,13 @@ def main():
         args.username = input("Enter FamilySearch username: ")
     if args.password is None:
         args.password = getpass.getpass("Enter FamilySearch password: ")
-    #
-    # do your thing here
-    dummy='stop'
+    return args
+
+def main():
+    """ main: checkmyancestors.py
+    """
+    args = get_arguments()
+    dummy = 'stop' #todo continue here
 
 if __name__ == "__main__":
             main()
