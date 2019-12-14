@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # coding: utf-8
-# style: one module = one file
+
 """
    checkmyancestors.py - check for changes in data in FamilySearch Tree
 
@@ -29,21 +29,25 @@
 import argparse
 import sys
 import getpass
+from checkmyancestors import databasemodule as dbm
+from checkmyancestors import sessionmodule as sem
 
 # getmyancestor project imports
 #
 
 def get_arguments():
-    """ function: get all arguments from the command line
-       :return: {Namespace}
-            individual{str},
-            outfile{TextIOWrapper},
-            password{str},
-            type{str},
-            username{str}
     """
+        Get the arguments passed to this script
+    """
+    try:
+        assert sys.version_info >= (3, 4)
+    except AssertionError:
+        sys.stderr.write("Python >= 3.4 is required to run this script\n")
+        sys.exit(2)
+    #
+    # start parsing
     parser = argparse.ArgumentParser(
-        description="Retrieve GEDCOM data from FamilySearch Tree (4 Jul 2016)",
+        description="Check GEDCOM data in the FamilySearch Tree",
         add_help=False,
         usage="getmyancestors.py -u username -p password [options]",
     )
@@ -77,19 +81,14 @@ def get_arguments():
         default='bioline',
         help="Type of ancestors [bioline]",
     )
-    # outfile argument
-    try:
-        parser.add_argument(
-            "-o",
-            "--outfile",
-            metavar="<FILE>",
-            type=argparse.FileType("w", encoding="UTF-8"),
-            default=sys.stdout,
-            help="Output file name with path [stdout]",
-        )
-    except TypeError:
-        sys.stderr.write("Python >= 3.4 is required to run this script\n")
-        sys.exit(2)
+    parser.add_argument(
+        "-o",
+        "--outfile",
+        metavar="<FILE>",
+        type=argparse.FileType("w", encoding="UTF-8"),
+        default=sys.stdout,
+        help="Output file name with path [stdout]",
+    )
     #
     # extract arguments from the command line
     try:
@@ -105,11 +104,15 @@ def get_arguments():
         args.password = getpass.getpass("Enter FamilySearch password: ")
     return args
 
+
 def main():
-    """ main: checkmyancestors.py
+    """
+        main: checkmyancestors.py
     """
     args = get_arguments()
-    dummy = 'stop' #todo continue here
+    db = dbm.Database()
+    sem.checker(args, db)
+
 
 if __name__ == "__main__":
             main()
