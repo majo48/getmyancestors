@@ -29,11 +29,10 @@
 import argparse
 import sys
 import getpass
-from checkmyancestors import databasemodule as dbm
-from checkmyancestors import sessionmodule as sem
 
 # getmyancestor project imports
-#
+from checkmyancestors import app as app
+
 
 def get_arguments():
     """
@@ -110,8 +109,7 @@ def main():
         main: checkmyancestors.py
     """
     args = get_arguments()
-    db = dbm.Database()
-    sem.checker(args, db)
+    app.checkmyancestors(args)
 
 
 if __name__ == "__main__":

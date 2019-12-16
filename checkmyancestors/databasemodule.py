@@ -24,6 +24,8 @@
    SOFTWARE.
 """
 
+import sys
+import time
 import sqlite3
 
 
@@ -33,16 +35,11 @@ class Database:
     """
 
     def __init__(self):
-        print('initialized database')
-        dummy='stop'  #todo continue here
+        text = 'initialized SQLite database version '+sqlite3.sqlite_version
+        log = "[%s]: %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), text)
+        sys.stderr.write(log)
 
-    def version(self):
-        """
-        Get the version of the SQLite database.
-        Returns:
-            string
-        """
-        return sqlite3.sqlite_version
+        dummy='stop'  #todo continue here
 
 
 def main():
