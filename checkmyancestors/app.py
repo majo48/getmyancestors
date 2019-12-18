@@ -30,6 +30,7 @@ from checkmyancestors import databasemodule as dbm
 from checkmyancestors import sessionmodule as sem
 import json
 import sys
+import time
 
 
 class PersonObj:
@@ -71,7 +72,7 @@ class PersonObj:
                         return {"father": father, "mother": mother}
             return {"father": None, "mother": None}
         except Exception as err:
-            print(sys.exc_info()[0], "Exception(1): key '"+err.args[0]+"' not found in FS.childAndParentsRelationships.")
+            write_log("Exception(1): key '"+err.args[0]+"' not found in FS.childAndParentsRelationships.")
             return {"father": None, "mother": None}
 
 # ----------
@@ -98,7 +99,7 @@ def read_nested_dict(fsdict: dict, *args):
                 return None
         return x
     except Exception as err:
-        print(sys.exc_info()[0], "Exception(2): index '"+err.args[0]+"' not found in FS.parents.")
+        write_log("Exception(2): index '"+err.args[0]+"' not found in FS.parents.")
         return None
 
 # ----------
@@ -118,7 +119,15 @@ def checkmyancestors(args):
     #
     # create a person object
     po = PersonObj(reference_id, generation, fs.get_person(reference_id))
-    dummy = 'stop'  # todo continue here
+    print('continue here...')
+
+# ----------
+
+
+def write_log(text):
+    """ write text in the log file """
+    log = "[%s]: %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), text)
+    sys.stderr.write(log)
 
 # ----------
 
