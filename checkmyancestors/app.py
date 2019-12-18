@@ -28,6 +28,8 @@
 # global imports
 from checkmyancestors import databasemodule as dbm
 from checkmyancestors import sessionmodule as sem
+import json
+import sys
 
 
 class PersonObj:
@@ -35,37 +37,58 @@ class PersonObj:
         Args:
             pid (str):  person id
             gen (int):  generation relative to reference person
-            json (str): json string downloaded for the person id
+            fsperson (dict): family search dictionary downloaded for the person id
     """
 
-    def __init__(self, pid, gen, json):
+    def __init__(self, pid, gen, fsperson):
         # parameters
         self.pid = pid
         self.generation = gen
-        self.json = json
+        self.fsperson = json.dumps(fsperson)
         # FamilySearch
-        disp = exjson(self.json, "persons", 0, "display")
-        self.name = exjson(disp, "name")
-        self.gender = exjson( disp, "gender")
-        self.born = exjson( disp, "birthDate")
-        self.lifespan = exjson( disp, "lifespan")
-        self.father = None #todo another method
-        self.mother = None #todo another method
-        dummy = 'stop'
+        disp = read_nested_dict(fsperson, "persons", 0, "display")
+        self.name = read_nested_dict(disp, "name")
+        self.gender = read_nested_dict(disp, "gender")
+        self.born = read_nested_dict(disp, "birthDate")
+        self.lifespan = read_nested_dict(disp, "lifespan")
+        parents = self.get_parents(pid, fsperson)
+        self.father = parents["father"]
+        self.mother = parents["mother"]
+
+    def get_parents(self, pid, fsperson):
+        """ read father and mother from family search person dictionary
+            Args:
+                pid (str):       person id
+                fsperson (dict): family search dictionary downloaded for the person id
+        """
+        try:
+            if "childAndParentsRelationships" in fsperson:
+                for rel in fsperson["childAndParentsRelationships"]:
+                    father = rel["parent1"]["resourceId"] if "parent1" in rel else None
+                    mother = rel["parent2"]["resourceId"] if "parent2" in rel else None
+                    child = rel["child"]["resourceId"] if "child" in rel else None
+                    if child == pid:
+                        return {"father": father, "mother": mother}
+            return {"father": None, "mother": None}
+        except Exception as err:
+            print(sys.exc_info()[0], "Exception(1): key '"+err.args[0]+"' not found in FS.childAndParentsRelationships.")
+            return {"father": None, "mother": None}
+
+# ----------
 
 
-def exjson(jsn: dict, *args):
+def read_nested_dict(fsdict: dict, *args):
     """
-        Extract the arguments part from the json data from FamilySearch.
+        Extract the arguments part from the dictionary data from FamilySearch.
         If missing or changed indexes to the data, the value persisted is None.
         Args:
-            jsn (dict): dictionary, complex, nested
+            fsdict (dict): dictionary, complex, nested
             *args (tuple): sequence of indexes in above dictionary
         Returns:
             value (str, int, list, or dict)
     """
     try:
-        x = jsn.copy()
+        x = fsdict.copy()
         for y in args:
             if isinstance(x, dict):
                 x = x.get(y)
@@ -75,8 +98,10 @@ def exjson(jsn: dict, *args):
                 return None
         return x
     except Exception as err:
-        print(err)
+        print(sys.exc_info()[0], "Exception(2): index '"+err.args[0]+"' not found in FS.parents.")
         return None
+
+# ----------
 
 
 def checkmyancestors(args):
@@ -90,8 +115,12 @@ def checkmyancestors(args):
     fs = sem.Session(args.username, args.password, timeout=10)
     reference_id = fs.fid
     generation = 0
+    #
+    # create a person object
     po = PersonObj(reference_id, generation, fs.get_person(reference_id))
     dummy = 'stop'  # todo continue here
+
+# ----------
 
 
 def main():

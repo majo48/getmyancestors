@@ -125,8 +125,6 @@ class Session:
                     cookies={"fssessionid": self.fssessionid},
                     timeout=self.timeout,
                 )
-                ct = r.headers['content-type']
-                print(ct)
             except requests.exceptions.ReadTimeout:
                 self.write_log("Read timed out")
                 continue
