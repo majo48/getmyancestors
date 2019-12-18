@@ -107,17 +107,19 @@ class Session:
             self.set_current()
             return True
 
-    def get_url(self, url):
+    def get_url(self, url, fsaccept="application/json"):
         """
             retrieve JSON structure from a FamilySearch URL
         """
         self.counter += 1
-        while True:
+        loop_counter = 0
+        while loop_counter <= 3:
+            loop_counter += 1
             try:
                 app.write_log("Downloading: " + url)
                 r = requests.get(
                     "https://familysearch.org" + url,
-                    headers={"Accept": "application/x-gedcomx-v1+json"},
+                    headers={"Accept": fsaccept},
                     cookies={"fssessionid": self.fssessionid},
                     timeout=self.timeout,
                 )
@@ -131,7 +133,7 @@ class Session:
             app.write_log("Status code: %s" % r.status_code)
             if r.status_code == 204:
                 return None
-            if r.status_code in {404, 405, 410, 500}:
+            if r.status_code in {404, 405, 406, 410, 500}:
                 app.write_log("WARNING: " + url)
                 return None
             if r.status_code == 401:
@@ -163,6 +165,7 @@ class Session:
             except Exception as e:
                 app.write_log("WARNING: corrupted file from %s, error: %s" % (url, e))
                 return None
+        return None
 
     def set_current(self):
         """ retrieve FamilySearch current user ID, name and language """
@@ -176,7 +179,12 @@ class Session:
     def get_person(self, person_id):
         """ get person from FamilySearch """
         url = "/platform/tree/persons/%s" % person_id
-        return self.get_url(url)
+        return self.get_url(url, "application/x-gedcomx-v1+json")
+
+    def get_change_history_person(self, person_id):
+        """ get change history from FamilySearch """
+        url = "/platform/tree/persons/%s/changes" % person_id
+        return self.get_url(url, "application/x-gedcomx-atom+json")
 
     def _(self, string):
         """ translate a string into user's language

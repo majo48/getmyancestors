@@ -39,14 +39,15 @@ class PersonObj:
             pid (str):  person id
             gen (int):  generation relative to reference person
             fsperson (dict): family search dictionary downloaded for the person id
+            fsperson_changes (dict): change history for person id
     """
 
-    def __init__(self, pid, gen, fsperson):
+    def __init__(self, pid, gen, fsperson, fsperson_changes):
         # parameters
         self.pid = pid
         self.generation = gen
         self.fsperson = json.dumps(fsperson)
-        # FamilySearch
+        # FamilySearch.person
         disp = read_nested_dict(fsperson, "persons", 0, "display")
         self.name = read_nested_dict(disp, "name")
         self.gender = read_nested_dict(disp, "gender")
@@ -55,12 +56,18 @@ class PersonObj:
         parents = self.get_parents(pid, fsperson)
         self.father = parents["father"]
         self.mother = parents["mother"]
+        # FamilySearch change history for person
+        self.change_history = json.dumps(fsperson_changes)
+        self.last_modified = read_nested_dict(fsperson_changes, "updated")
+        dummy = 'stop' #todo continue here with change history spouses and children
 
     def get_parents(self, pid, fsperson):
         """ read father and mother from family search person dictionary
             Args:
                 pid (str):       person id
                 fsperson (dict): family search dictionary downloaded for the person id
+            Return:
+                (dict):          {"father": "abc", "mother": "def"}
         """
         try:
             if "childAndParentsRelationships" in fsperson:
@@ -117,8 +124,10 @@ def checkmyancestors(args):
     reference_id = fs.fid
     generation = 0
     #
-    # create a person object
-    po = PersonObj(reference_id, generation, fs.get_person(reference_id))
+    # create a person object for reference_id
+    fsperson = fs.get_person(reference_id)
+    fsperson_changes = fs.get_change_history_person(reference_id)
+    po = PersonObj(reference_id, generation, fsperson, fsperson_changes)
     print('continue here...')
 
 # ----------
