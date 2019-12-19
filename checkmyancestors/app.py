@@ -43,23 +43,29 @@ class PersonObj:
     """
 
     def __init__(self, pid, gen, fsperson, fsperson_changes):
+        #
         # parameters
         self.pid = pid
         self.generation = gen
         self.fsperson = json.dumps(fsperson)
+        #
         # FamilySearch.person.display
         disp = read_nested_dict(fsperson, "persons", 0, "display")
         self.name = read_nested_dict(disp, "name")
         self.gender = read_nested_dict(disp, "gender")
         self.born = read_nested_dict(disp, "birthDate")
         self.lifespan = read_nested_dict(disp, "lifespan")
+        #
+        # FamilySearch.childAndParentsRelationships.person1(person2)
         parents = self.get_parents(fsperson)
         self.father = parents["father"]
         self.mother = parents["mother"]
+        #
         # FamilySearch.person.relationships(list) for person
         relationships = read_nested_dict(fsperson, "relationships")
         relationships_asc = sorted( relationships, key=lambda k: k['id'])
-        self.relationships_asc = json.dumps(relationships_asc)
+        self.relationships = json.dumps(relationships_asc)
+        #
         # FamilySearch change history(dict) for person
         self.change_history = json.dumps(fsperson_changes)
         self.last_modified = read_nested_dict(fsperson_changes, "updated")
