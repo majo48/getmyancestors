@@ -38,15 +38,17 @@ class PersonObj:
         Args:
             pid (str):  person id
             gen (int):  generation relative to reference person
+            errs (list): if applicable, HTTP status codes from FamilySearch downloads
             fsperson (dict): family search dictionary downloaded for the person id
             fsperson_changes (dict): change history for person id
     """
 
-    def __init__(self, pid, gen, fsperson, fsperson_changes):
+    def __init__(self, pid, gen, errs, fsperson, fsperson_changes):
         #
         # parameters
         self.pid = pid
         self.generation = gen
+        self.errors = json.dumps(errs)
         self.fsperson = json.dumps(fsperson)
         #
         # FamilySearch.person.display
@@ -67,7 +69,6 @@ class PersonObj:
         self.relationships = json.dumps(relationships_asc)
         #
         # FamilySearch change history(dict) for person
-        self.change_history = json.dumps(fsperson_changes)
         self.last_modified = read_nested_dict(fsperson_changes, "updated")
 
     def get_parents(self, fsperson):
@@ -133,12 +134,14 @@ def checkmyancestors(args):
     generation = 0
     #
     # create a person object for reference_id
-    po = PersonObj(
-        reference_id,
-        generation,
-        fs.get_person(reference_id),
-        fs.get_change_history_person(reference_id)
-    )
+    errors = list()
+    fsperson = fs.get_person(reference_id)
+    if fsperson is None:
+        errors.append(fs.status_code)
+    fschange = fs.get_change_history_person(reference_id)
+    if fschange is None:
+        errors.append(fs.status_code)
+    po = PersonObj(reference_id, generation, errors, fsperson, fschange)
     print('continue here...')
 
 # ----------

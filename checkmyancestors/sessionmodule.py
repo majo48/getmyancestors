@@ -45,6 +45,7 @@ class Session:
         self.fid = self.lang = self.display_name = None
         self.counter = 0
         self.logged = self.login()
+        self.status_code = 200
 
 
     def login(self):
@@ -131,12 +132,23 @@ class Session:
                 time.sleep(self.timeout)
                 continue
             app.write_log("Status code: %s" % r.status_code)
+            self.status_code = r.status_code
             if r.status_code == 204:
+                # The request was successful but nothing was available to return.
                 return None
-            if r.status_code in {404, 405, 406, 410, 500}:
-                app.write_log("WARNING: " + url)
+            if r.status_code in {404, 405, 406, 410, 429, 500, 503, 504}:
+                # 404: A resource was requested that does not exist.
+                # 405: The request was not understood by the networking and routing infrastructure.
+                # 406: An invalid content type is being used in the Accept header.
+                # 410: The resource you are requesting has been deleted.
+                # 429: Too many requests, the user has used too much processing time recently.
+                # 500: Internal Server Error.
+                # 503: Service Unavailable.
+                # 504: Gateway Timeout.
+                app.write_log("WARNING: code " + r.status_code + ", " + url)
                 return None
             if r.status_code == 401:
+                # The user is not properly authenticated.
                 self.login()
                 continue
             try:
@@ -144,25 +156,16 @@ class Session:
             except requests.exceptions.HTTPError:
                 app.write_log("HTTPError")
                 if r.status_code == 403:
-                    if (
-                        "message" in r.json()["errors"][0]
-                        and r.json()["errors"][0]["message"] == "Unable to get ordinances."
-                    ):
-                        app.write_log(
-                            "Unable to get ordinances. "
-                            "Try with an LDS account or without option -c."
-                        )
-                        return "error"
-                    app.write_log(
-                        "WARNING: code 403 from %s %s"
-                        % (url, r.json()["errors"][0]["message"] or "")
-                    )
+                    # A resource was requested that the user does not have permission to access.
+                    app.write_log("WARNING: code " + r.status_code + ", " + url)
                     return None
                 time.sleep(self.timeout)
                 continue
             try:
                 return r.json()
             except Exception as e:
+                # 420: Methode failure
+                self.status_code = 420
                 app.write_log("WARNING: corrupted file from %s, error: %s" % (url, e))
                 return None
         return None
