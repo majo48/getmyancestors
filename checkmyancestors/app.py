@@ -47,24 +47,26 @@ class PersonObj:
         self.pid = pid
         self.generation = gen
         self.fsperson = json.dumps(fsperson)
-        # FamilySearch.person
+        # FamilySearch.person.display
         disp = read_nested_dict(fsperson, "persons", 0, "display")
         self.name = read_nested_dict(disp, "name")
         self.gender = read_nested_dict(disp, "gender")
         self.born = read_nested_dict(disp, "birthDate")
         self.lifespan = read_nested_dict(disp, "lifespan")
-        parents = self.get_parents(pid, fsperson)
+        parents = self.get_parents(fsperson)
         self.father = parents["father"]
         self.mother = parents["mother"]
-        # FamilySearch change history for person
+        # FamilySearch.person.relationships(list) for person
+        relationships = read_nested_dict(fsperson, "relationships")
+        relationships_asc = sorted( relationships, key=lambda k: k['id'])
+        self.relationships_asc = json.dumps(relationships_asc)
+        # FamilySearch change history(dict) for person
         self.change_history = json.dumps(fsperson_changes)
         self.last_modified = read_nested_dict(fsperson_changes, "updated")
-        dummy = 'stop' #todo continue here with change history spouses and children
 
-    def get_parents(self, pid, fsperson):
+    def get_parents(self, fsperson):
         """ read father and mother from family search person dictionary
             Args:
-                pid (str):       person id
                 fsperson (dict): family search dictionary downloaded for the person id
             Return:
                 (dict):          {"father": "abc", "mother": "def"}
@@ -75,7 +77,7 @@ class PersonObj:
                     father = rel["parent1"]["resourceId"] if "parent1" in rel else None
                     mother = rel["parent2"]["resourceId"] if "parent2" in rel else None
                     child = rel["child"]["resourceId"] if "child" in rel else None
-                    if child == pid:
+                    if child == self.pid:
                         return {"father": father, "mother": mother}
             return {"father": None, "mother": None}
         except Exception as err:
@@ -125,9 +127,12 @@ def checkmyancestors(args):
     generation = 0
     #
     # create a person object for reference_id
-    fsperson = fs.get_person(reference_id)
-    fsperson_changes = fs.get_change_history_person(reference_id)
-    po = PersonObj(reference_id, generation, fsperson, fsperson_changes)
+    po = PersonObj(
+        reference_id,
+        generation,
+        fs.get_person(reference_id),
+        fs.get_change_history_person(reference_id)
+    )
     print('continue here...')
 
 # ----------
