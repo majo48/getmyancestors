@@ -104,6 +104,14 @@ class PersonObj:
             write_log("Exception(1): key '"+err.args[0]+"' not found in FS.childAndParentsRelationships.")
             return {"father": None, "mother": None}
 
+    def too_many_requests(self):
+        """ check for HTTP error code 429: too many requests """
+        if 429 in json.loads(self.status_list):
+            write_log('HTTP error 429: too many requests')
+            return True
+        else:
+            return False
+
 # ----------
 
 
@@ -178,16 +186,12 @@ def checkmyancestors(args):
         if ((person.father is not None) and
             ((args.type == 'bioline') or (args.type == 'patriline'))):
             father = get_person_object(person.father, person.generation+1, fs)
-            if 429 in json.loads(father.status_list):
-                write_log('HTTP error 429: too many requests')
-                break
+            if father.too_many_requests(): break
             todolist.append(father)
         if ((person.mother is not None) and
             ((args.type == 'bioline') or (args.type == 'matriline'))):
             mother = get_person_object(person.mother, person.generation+1, fs)
-            if 429 in json.loads(mother.status_list):
-                write_log('HTTP error 429: too many requests')
-                break
+            if mother.too_many_requests(): break
             todolist.append(mother)
     # eol
     print('finished persisting.')
