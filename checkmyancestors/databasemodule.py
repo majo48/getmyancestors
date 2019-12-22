@@ -27,6 +27,7 @@
 import sys
 import time
 import sqlite3
+from checkmyancestors import app
 
 
 class Database:
@@ -35,18 +36,26 @@ class Database:
     """
 
     def __init__(self):
+        """ initialize the SQLlite database"""
         text = 'initialized SQLite database version '+sqlite3.sqlite_version
         log = "[%s]: %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), text)
         sys.stderr.write(log)
-
         dummy='stop'  #todo continue here
+
+    def persist(self, person):
+        """ persist person to database
+            Args:
+                 person (PersonObj): object data downloaded from FamilySearch
+        """
+        print("persisted " + person.name + ', ' + person.lifespan + "[" + str(person.generation) + "]")
+        #todo continue here...
 
 
 def main():
     """
         main@databasemodule.py
     """
-    dummy = 'stop'  #todo continue here
+    dummy = 'stop'  #todo continue here...
 
 
 if __name__ == "__main__":
