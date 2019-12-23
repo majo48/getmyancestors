@@ -40,18 +40,20 @@ global_timestamp = None
 class PersonObj:
     """ person object in this application
         Args:
-            pid (str):  person id
+            personid (str):  person id
             generation (int):  generation relative to reference person
+            referenceid (str): the person id of the person with generation = 0
             status (list): HTTP status codes from FamilySearch person and history downloads
             fsperson (dict): family search dictionary downloaded for the person id
             fsperson_changes (dict): change history for person id
     """
 
-    def __init__(self, pid, generation, status, fsperson, fsperson_changes):
+    def __init__(self, personid, generation, referenceid, status, fsperson, fsperson_changes):
         #
         # parameters
-        self.pid = pid
+        self.personid = personid
         self.generation = generation
+        self.referenceid = referenceid
         self.status_list = json.dumps(status)
         self.fsperson = json.dumps(fsperson)
         self.timestamp = global_timestamp
@@ -64,8 +66,8 @@ class PersonObj:
             self.lifespan = read_nested_dict(disp, "lifespan")
             # FamilySearch.childAndParentsRelationships.person1(person2)
             parents = self.get_parents(fsperson)
-            self.father = parents["father"]
-            self.mother = parents["mother"]
+            self.fatherid = parents["father"]
+            self.motherid = parents["mother"]
             # FamilySearch.person.relationships(list) for person
             relationships = read_nested_dict(fsperson, "relationships")
             relationships_asc = sorted( relationships, key=lambda k: k['id'])
@@ -75,8 +77,8 @@ class PersonObj:
             self.gender = None
             self.born = None
             self.lifespan = None
-            self.father = None
-            self.mother = None
+            self.fatherid = None
+            self.motherid = None
             self.relationships = None
         if fsperson_changes is not None:
             # FamilySearch change history(dict) for person
@@ -97,7 +99,7 @@ class PersonObj:
                     father = rel["parent1"]["resourceId"] if "parent1" in rel else None
                     mother = rel["parent2"]["resourceId"] if "parent2" in rel else None
                     child = rel["child"]["resourceId"] if "child" in rel else None
-                    if child == self.pid:
+                    if child == self.personid:
                         return {"father": father, "mother": mother}
             return {"father": None, "mother": None}
         except Exception as err:
@@ -150,13 +152,13 @@ def write_log(text):
 # ----------
 
 
-def get_person_object(person_id: str, generation: int, fs: sem.Session):
+def get_person_object(person_id: str, generation: int, reference_id: str, fs: sem.Session):
     """ download person data from the FamilySearch site """
     fs_person = fs.get_person(person_id)
     fs_status = [ fs.status_code ]
     fs_change = fs.get_change_history_person(person_id)
     fs_status.append(fs.status_code)
-    return PersonObj(person_id, generation, fs_status, fs_person, fs_change)
+    return PersonObj(person_id, generation, reference_id, fs_status, fs_person, fs_change)
 
 # ----------
 
@@ -177,20 +179,20 @@ def checkmyancestors(args):
     if args.individual is not None:
         reference_id = args.individual
     todolist = []
-    todolist.append(get_person_object(reference_id, 0, fs))
+    todolist.append(get_person_object(reference_id, 0, reference_id, fs))
     #
     # loop thru all ancestors in the list
     while todolist:
         person: PersonObj = todolist.pop(0)
-        db.persist( person )
-        if ((person.father is not None) and
+        db.persist_person(person)
+        if ((person.fatherid is not None) and
             ((args.type == 'bioline') or (args.type == 'patriline'))):
-            father = get_person_object(person.father, person.generation+1, fs)
+            father = get_person_object(person.fatherid, person.generation + 1, reference_id, fs)
             if father.too_many_requests(): break
             todolist.append(father)
-        if ((person.mother is not None) and
+        if ((person.motherid is not None) and
             ((args.type == 'bioline') or (args.type == 'matriline'))):
-            mother = get_person_object(person.mother, person.generation+1, fs)
+            mother = get_person_object(person.motherid, person.generation + 1, reference_id, fs)
             if mother.too_many_requests(): break
             todolist.append(mother)
     # eol

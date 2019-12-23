@@ -24,10 +24,9 @@
    SOFTWARE.
 """
 
-import sys
-import time
+# global imports
+import os
 import sqlite3
-from checkmyancestors import app
 
 
 class Database:
@@ -36,13 +35,40 @@ class Database:
     """
 
     def __init__(self):
-        """ initialize the SQLlite database"""
-        text = 'initialized SQLite database version '+sqlite3.sqlite_version
-        log = "[%s]: %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), text)
-        sys.stderr.write(log)
-        dummy='stop'  #todo continue here
+        """ initialize the SQLite database"""
+        path = os.path.dirname(os.path.realpath(__file__))
+        conn = sqlite3.connect(path + '/' + 'database.db')
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS "persons" (
+        	    "personid"      TEXT NOT NULL,
+	            "timestamp"	    INTEGER NOT NULL,
+	            "referenceid"   TEXT NOT NULL,
+	            "status_list"   TEXT NOT NULL,
+	            "generation"    INTEGER NOT NULL,
+	            "fsperson"      TEXT,
+	            "name"          TEXT,
+	            "gender"        TEXT,
+	            "born"          TEXT,
+	            "lifespan"      TEXT,
+	            "fatherid"      TEXT,
+	            "motherid"      TEXT,
+	            "relationships" TEXT,
+	            "last_modified" INTEGER,
+	            PRIMARY KEY("personid","timestamp","referenceid")
+                );
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS "sessions" (
+	            "timestamp"    INTEGER NOT NULL,
+	            "person_count"  INTEGER NOT NULL,
+	            "status"       TEXT,
+	            "change_log"    TEXT,
+	            PRIMARY KEY("timestamp")
+                );
+        """)
 
-    def persist(self, person):
+    def persist_person(self, person):
         """ persist person to database
             Args:
                  person (PersonObj): object data downloaded from FamilySearch
