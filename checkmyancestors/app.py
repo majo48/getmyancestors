@@ -178,13 +178,14 @@ def checkmyancestors(args):
     reference_id = fs.fid
     if args.individual is not None:
         reference_id = args.individual
+    changes = []
     todolist = []
     todolist.append(get_person_object(reference_id, 0, reference_id, fs))
     #
     # loop thru all ancestors in the list
     while todolist:
         person: PersonObj = todolist.pop(0)
-        db.persist_person(person)
+        changes = changes + db.persist_person(person)
         if ((person.fatherid is not None) and
             ((args.type == 'bioline') or (args.type == 'patriline'))):
             father = get_person_object(person.fatherid, person.generation + 1, reference_id, fs)
@@ -196,7 +197,7 @@ def checkmyancestors(args):
             if mother.too_many_requests(): break
             todolist.append(mother)
     # eol
-    print('finished persisting.')
+    print(changes)
 
 # ----------
 
