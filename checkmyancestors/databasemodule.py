@@ -26,7 +26,9 @@
 
 # global imports
 import os
+import json
 import sqlite3
+from datetime import datetime
 from sqlite3.dbapi2 import Connection, Cursor
 from checkmyancestors import app
 
@@ -168,12 +170,41 @@ class Database:
             self._insert_person(person)
         return chgs
 
+    def persist_session(self, timestamp, referenceid, person_count, change_log):
+        """ persist session data
+            Args:
+                 timestamp (int):    timestamp for all data in the current session
+                 referenceid (str):  id of the reference person
+                 person_count (int): number of person objects processed
+                 change_log (list):  list with all changes
+        """
+        conn: Connection = self._get_connection()
+        cursor: Cursor = conn.cursor()
+        sql = """
+            INSERT INTO sessions (timestamp, person_count, status, change_log)
+                          VALUES (?, ?, ?, ?)
+        """
+        try:
+            dt_object = datetime.fromtimestamp(timestamp)
+            status = 'Timestamp: '+dt_object.strftime("%Y-%m-%d %H:%M:%S")+'. Ancestors for ID: '+referenceid
+            if change_log:
+                status += '. Found changes in ancestors.'
+            else:
+                status += '. Nothing has changed.'
+            app.write_log(status)
+            cursor.execute( sql, (timestamp, person_count, status, json.dumps(change_log)))
+            conn.commit()
+            conn.close()
+        #
+        except sqlite3.Error as e:
+            app.write_log("SQLite INSERT session error occurred:", e.args[0])
+
 
 def main():
     """
         main@databasemodule.py
     """
-    dummy = 'stop'  #todo continue here...
+    print('This module is not a script, but part of the checkmyancestors application.')
 
 
 if __name__ == "__main__":

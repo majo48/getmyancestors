@@ -198,7 +198,7 @@ class Session:
 
 def main():
     """ main: databasemodule.py """
-    print('module: databasemodule.py')
+    print('This module is not a script, but part of the checkmyancestors application.')
 
 if __name__ == "__main__":
             main()

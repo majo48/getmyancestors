@@ -178,26 +178,36 @@ def checkmyancestors(args):
     reference_id = fs.fid
     if args.individual is not None:
         reference_id = args.individual
+    # initialize loop
     changes = []
+    person_count = 0
     todolist = []
-    todolist.append(get_person_object(reference_id, 0, reference_id, fs))
-    #
-    # loop thru all ancestors in the list
+    todolist.append(
+        {'personid': reference_id, 'generation': 0, 'referenceid': reference_id}
+    )
     while todolist:
-        person: PersonObj = todolist.pop(0)
+        # loop thru all ancestors in the list
+        todo = todolist.pop(0)
+        person: PersonObj = get_person_object( todo['personid'], todo['generation'], todo['referenceid'], fs )
         changes = changes + db.persist_person(person)
+        write_log('Person: ID='+person.personid+', Name='+person.name+' ('+person.lifespan+')')
+        person_count += 1
+        # check HTTP status code
+        if person.too_many_requests():
+            break
+        # check person's father
         if ((person.fatherid is not None) and
             ((args.type == 'bioline') or (args.type == 'patriline'))):
-            father = get_person_object(person.fatherid, person.generation + 1, reference_id, fs)
-            if father.too_many_requests(): break
-            todolist.append(father)
+            todolist.append(
+                {'personid': person.fatherid, 'generation': person.generation+1, 'referenceid': reference_id}
+            )
+        # check person's mother
         if ((person.motherid is not None) and
             ((args.type == 'bioline') or (args.type == 'matriline'))):
-            mother = get_person_object(person.motherid, person.generation + 1, reference_id, fs)
-            if mother.too_many_requests(): break
-            todolist.append(mother)
-    # eol
-    print(changes)
+            todolist.append(
+                {'personid': person.motherid, 'generation': person.generation+1, 'referenceid': reference_id}
+            )
+    db.persist_session(global_timestamp, reference_id, person_count, changes)
 
 # ----------
 
@@ -206,7 +216,7 @@ def main():
     """
         main: checkmyancestors/app.py
     """
-    print('main: checkmyancestors/app.py')
+    print('This module is not a script, but part of the checkmyancestors application.')
 
 
 if __name__ == "__main__":
