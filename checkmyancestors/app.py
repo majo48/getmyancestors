@@ -35,6 +35,7 @@ from checkmyancestors import sessionmodule as sem
 
 #global variables
 global_timestamp = None
+global_args = None
 
 
 class PersonObj:
@@ -103,13 +104,13 @@ class PersonObj:
                         return {"father": father, "mother": mother}
             return {"father": None, "mother": None}
         except Exception as err:
-            write_log("Exception(1): key '"+err.args[0]+"' not found in FS.childAndParentsRelationships.")
+            write_log('error', "Exception(1): key '"+err.args[0]+"' not found in FS.childAndParentsRelationships.")
             return {"father": None, "mother": None}
 
     def too_many_requests(self):
         """ check for HTTP error code 429: too many requests """
         if 429 in json.loads(self.status_list):
-            write_log('HTTP error 429: too many requests')
+            write_log('error', 'HTTP error 429: too many requests')
             return True
         else:
             return False
@@ -138,16 +139,29 @@ def read_nested_dict(fsdict: dict, *args):
                 return None
         return x
     except Exception as err:
-        write_log("Exception(2): index '"+err.args[0]+"' not found in FS.parents.")
+        write_log('error', "Exception(2): index '"+err.args[0]+"' not found in FS.parents.")
         return None
 
 # ----------
 
 
-def write_log(text):
-    """ write text in the log file """
-    log = "[%s]: %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), text)
-    sys.stderr.write(log)
+def write_log(level, text):
+    """ write text to stderr, conditionally
+        Args:
+            level(str): 'info', 'error', or 'debug'
+    """
+    def wr(level, text):
+        """ write text to stderr """
+        log = "[%s] %s: %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), level.upper(), text)
+        sys.stderr.write(log)
+
+    if (level == 'debug'):
+        if (global_args.debug == 'on'):
+            wr(level, text)
+    elif (level == 'error') or (level == 'info'):
+        wr(level, text)
+    else:
+        wr('error', 'Bug detected in app.write_log: illegal level('+level+').')
 
 # ----------
 
@@ -171,6 +185,8 @@ def checkmyancestors(args):
     global global_timestamp
     now = datetime.now()
     global_timestamp = int(datetime.timestamp(now))
+    global global_args
+    global_args = args
     # objects
     db = dbm.Database() # SQLlite database
     fs = sem.Session(args.username, args.password, timeout=10) # FamilySearch
@@ -190,7 +206,7 @@ def checkmyancestors(args):
         todo = todolist.pop(0)
         person: PersonObj = get_person_object( todo['personid'], todo['generation'], todo['referenceid'], fs )
         changes = changes + db.persist_person(person)
-        write_log('Person: ID='+person.personid+', Name='+person.name+' ('+person.lifespan+')')
+        write_log('info', 'Person: ID='+person.personid+', Name='+person.name+' ('+person.lifespan+')')
         person_count += 1
         # check HTTP status code
         if person.too_many_requests():

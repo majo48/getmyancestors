@@ -71,7 +71,7 @@ class Database:
             conn.close()
         #
         except sqlite3.Error as e:
-            app.write_log("SQLite CREATE TABLE error occurred:", e.args[0])
+            app.write_log('error', "SQLite CREATE TABLE error occurred:", e.args[0])
 
     def _get_connection(self):
         """ get SQLite connection object """
@@ -101,7 +101,7 @@ class Database:
             conn.close()
         #
         except sqlite3.Error as e:
-            app.write_log("SQLite INSERT person error occurred:", e.args[0])
+            app.write_log('error', "SQLite INSERT person error occurred:", e.args[0])
 
     def _get_person(self, personid, referenceid):
         """
@@ -122,7 +122,7 @@ class Database:
             return rows
         #
         except sqlite3.Error as e:
-            app.write_log("SQLite INSERT person error occurred:", e.args[0])
+            app.write_log('error', "SQLite INSERT person error occurred:", e.args[0])
             return None
 
     def persist_person(self, person):
@@ -162,7 +162,7 @@ class Database:
                 lines = ''
                 for line in chgs:
                     lines +=  line + '\n'
-                app.write_log(lines[:-2])
+                app.write_log('info', lines[:-2])
                 # add object to the SQLite database
                 self._insert_person(person)
         else:
@@ -191,13 +191,13 @@ class Database:
                 status += '. Found changes in ancestors.'
             else:
                 status += '. Nothing has changed.'
-            app.write_log(status)
+            app.write_log('info', status)
             cursor.execute( sql, (timestamp, person_count, status, json.dumps(change_log)))
             conn.commit()
             conn.close()
         #
         except sqlite3.Error as e:
-            app.write_log("SQLite INSERT session error occurred:", e.args[0])
+            app.write_log('error', "SQLite INSERT session error occurred:", e.args[0])
 
 
 def main():

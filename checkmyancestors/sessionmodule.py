@@ -55,17 +55,17 @@ class Session:
         while True:
             try:
                 url = "https://www.familysearch.org/auth/familysearch/login"
-                app.write_log("Downloading: " + url)
+                app.write_log('debug', "Downloading: " + url)
                 r = requests.get(url, params={"ldsauth": False}, allow_redirects=False)
                 url = r.headers["Location"]
-                app.write_log("Downloading: " + url)
+                app.write_log('debug', "Downloading: " + url)
                 r = requests.get(url, allow_redirects=False)
                 idx = r.text.index('name="params" value="')
                 span = r.text[idx + 21 :].index('"')
                 params = r.text[idx + 21 : idx + 21 + span]
 
                 url = "https://ident.familysearch.org/cis-web/oauth2/v3/authorization"
-                app.write_log("Downloading: " + url)
+                app.write_log('debug', "Downloading: " + url)
                 r = requests.post(
                     url,
                     data={"params": params, "userName": self.username, "password": self.password},
@@ -73,38 +73,39 @@ class Session:
                 )
 
                 if "The username or password was incorrect" in r.text:
-                    app.write_log("The username or password was incorrect")
+                    app.write_log('error', "The username or password was incorrect")
                     return False
 
                 if "Invalid Oauth2 Request" in r.text:
-                    app.write_log("Invalid Oauth2 Request")
+                    app.write_log('error', "Invalid Oauth2 Request")
                     time.sleep(self.timeout)
                     continue
 
                 url = r.headers["Location"]
-                app.write_log("Downloading: " + url)
+                app.write_log('debug', "Downloading: " + url)
                 r = requests.get(url, allow_redirects=False)
                 self.fssessionid = r.cookies["fssessionid"]
             except requests.exceptions.ReadTimeout:
-                app.write_log("Read timed out")
+                app.write_log('debug', "Read timed out")
                 continue
             except requests.exceptions.ConnectionError:
-                app.write_log("Connection aborted")
+                app.write_log('debug', "Connection aborted")
                 time.sleep(self.timeout)
                 continue
             except requests.exceptions.HTTPError:
-                app.write_log("HTTPError")
+                app.write_log('debug', "HTTPError")
                 time.sleep(self.timeout)
                 continue
             except KeyError:
-                app.write_log("KeyError")
+                app.write_log('debug', "KeyError")
                 time.sleep(self.timeout)
                 continue
             except ValueError:
-                app.write_log("ValueError")
+                app.write_log('debug', "ValueError")
                 time.sleep(self.timeout)
                 continue
-            app.write_log("FamilySearch session id: " + self.fssessionid)
+            app.write_log('info', "Successfully logged in as user: " + self.username)
+            app.write_log('debug', "FamilySearch session id: " + self.fssessionid)
             self.set_current()
             return True
 
@@ -117,7 +118,7 @@ class Session:
         while loop_counter <= 3:
             loop_counter += 1
             try:
-                app.write_log("Downloading: " + url)
+                app.write_log('debug', "Downloading: " + url)
                 r = requests.get(
                     "https://familysearch.org" + url,
                     headers={"Accept": fsaccept},
@@ -125,13 +126,13 @@ class Session:
                     timeout=self.timeout,
                 )
             except requests.exceptions.ReadTimeout:
-                app.write_log("Read timed out")
+                app.write_log('debug', "Read timed out")
                 continue
             except requests.exceptions.ConnectionError:
-                app.write_log("Connection aborted")
+                app.write_log('debug', "Connection aborted")
                 time.sleep(self.timeout)
                 continue
-            app.write_log("Status code: %s" % r.status_code)
+            app.write_log('debug', "Status code: %s" % r.status_code)
             self.status_code = r.status_code
             if r.status_code == 204:
                 # The request was successful but nothing was available to return.
@@ -145,7 +146,7 @@ class Session:
                 # 500: Internal Server Error.
                 # 503: Service Unavailable.
                 # 504: Gateway Timeout.
-                app.write_log("WARNING: code " + r.status_code + ", " + url)
+                app.write_log('debug', "WARNING: code " + r.status_code + ", " + url)
                 return None
             if r.status_code == 401:
                 # The user is not properly authenticated.
@@ -154,10 +155,10 @@ class Session:
             try:
                 r.raise_for_status()
             except requests.exceptions.HTTPError:
-                app.write_log("HTTPError")
+                app.write_log('debug', "HTTPError")
                 if r.status_code == 403:
                     # A resource was requested that the user does not have permission to access.
-                    app.write_log("WARNING: code " + r.status_code + ", " + url)
+                    app.write_log('debug', "WARNING: code " + r.status_code + ", " + url)
                     return None
                 time.sleep(self.timeout)
                 continue
@@ -166,7 +167,7 @@ class Session:
             except Exception as e:
                 # 420: Methode failure
                 self.status_code = 420
-                app.write_log("WARNING: corrupted file from %s, error: %s" % (url, e))
+                app.write_log('error', "WARNING: corrupted file from %s, error: %s" % (url, e))
                 return None
         return None
 

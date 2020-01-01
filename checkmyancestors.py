@@ -81,12 +81,13 @@ def get_arguments():
         help="Type of ancestors [bioline]",
     )
     parser.add_argument(
-        "-o",
-        "--outfile",
-        metavar="<FILE>",
-        type=argparse.FileType("w", encoding="UTF-8"),
-        default=sys.stdout,
-        help="Output file name with path [stdout]",
+        "-d",
+        "--debug",
+        choices=['on', 'off'],
+        metavar="<STR>",
+        type=str,
+        default='off',
+        help="Enable debug output (default: off)",
     )
     #
     # extract arguments from the command line
