@@ -235,16 +235,41 @@ class Database:
         except sqlite3.Error as e:
             app.write_log('error', "SQLite INSERT session error occurred:" + e.args[0])
 
+    def check_integrity(self):
+        """
+        check the SQLite database integrity
+        Returns:
+            (bool): True if OK, False if not.
+        """
+        conn: Connection = self._get_connection()
+        conn.row_factory = sqlite3.Row
+        cursor: Cursor = conn.cursor()
+        try:
+            cursor.execute( 'pragma integrity_check;' )
+            rows = [dict(row) for row in cursor.fetchall()] # convert sqlite3.Row
+            status = rows[0]['integrity_check']
+            if status == 'ok':
+                return True
+            return False
+        #
+        except sqlite3.Error as e:
+            app.write_log('error', "SQLite INSERT person error occurred:" + e.args[0])
+            return False
+
 
 class TestSQLiteDatabase(unittest.TestCase):
 
-    def test_database_initialisation(self):
+    def test_database_object(self):
         self.db = Database()
         self.assertIsInstance(self.db, Database, )
 
     def test_sqlite_version(self):
         version = sqlite3.version
         self.assertGreaterEqual(version, '2.6.0')
+
+    def test_sqlite_integrity(self):
+        self.db = Database()
+        self.assertTrue( self.db.check_integrity() )
 
 
 if __name__ == "__main__":
