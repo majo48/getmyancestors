@@ -28,6 +28,7 @@
 import os
 import json
 import sqlite3
+import unittest
 from datetime import datetime
 from sqlite3.dbapi2 import Connection, Cursor
 from checkmyancestors import app
@@ -235,12 +236,16 @@ class Database:
             app.write_log('error', "SQLite INSERT session error occurred:" + e.args[0])
 
 
-def main():
-    """
-        main@databasemodule.py
-    """
-    print('This module is not a script, but part of the checkmyancestors application.')
+class TestSQLiteDatabase(unittest.TestCase):
+
+    def test_database_initialisation(self):
+        self.db = Database()
+        self.assertIsInstance(self.db, Database, )
+
+    def test_sqlite_version(self):
+        version = sqlite3.version
+        self.assertGreaterEqual(version, '2.6.0')
 
 
 if __name__ == "__main__":
-            main()
+    unittest.main()
