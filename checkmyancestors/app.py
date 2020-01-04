@@ -108,14 +108,22 @@ class PersonObj:
             write_log('error', "Exception(1): key '"+err.args[0]+"' not found in FS.childAndParentsRelationships.")
             return {"father": None, "mother": None}
 
-    def too_many_requests(self):
+    def has_bad_requests(self):
         """ check for HTTP error code 429: too many requests """
-        if 429 in json.loads(self.status_list):
+        return_code = False
+        valid_codes = (200, 301, 404, 410, 429)
+        status_list = json.loads(self.status_list)
+        for code in status_list:
+            if code not in valid_codes:
+                write_log('error', 'Unexpected HTTP code: ' + str(code))
+        #
+        if 429 in status_list:
             write_log('error', 'HTTP error 429: too many requests')
-            return True
-        return False
+            return_code = True # breaks outer loop
+        #
+        return return_code
 
-    def unreachable(self):
+    def is_unreachable(self):
         """ check for HTTP error codes for: mergers, not found, and deletions """
         status_list = json.loads(self.status_list)
         if 301 in status_list:
@@ -222,9 +230,9 @@ def checkmyancestors(args):
         if db.check_person(person.personid, person.referenceid) == False:
             person.status = 'created'
         # check HTTP status codes
-        if person.too_many_requests():
+        if person.has_bad_requests():
             break
-        if person.unreachable():
+        if person.is_unreachable():
             person.status = 'deleted'
         # persist person to database
         changes = changes + db.persist_person(person)
