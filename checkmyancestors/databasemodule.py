@@ -48,6 +48,7 @@ class Database:
 	                timestamp	  INTEGER NOT NULL,
 	                referenceid   TEXT NOT NULL,
 	                status_list   TEXT NOT NULL,
+	                status        TEXT NOT NULL,
 	                generation    INTEGER NOT NULL,
 	                fsperson      TEXT,
 	                name          TEXT,
@@ -71,7 +72,7 @@ class Database:
             conn.close()
         #
         except sqlite3.Error as e:
-            app.write_log('error', "SQLite CREATE TABLE error occurred:", e.args[0])
+            app.write_log('error', "SQLite CREATE TABLE error occurred:" + e.args[0])
 
     def _get_connection(self):
         """ get SQLite connection object """
@@ -87,21 +88,21 @@ class Database:
         cursor: Cursor = conn.cursor()
         sql = """
             INSERT INTO persons 
-                (personid, timestamp, referenceid, status_list, generation, 
-                 fsperson, name, gender, born, lifespan, 
-                 fatherid, motherid, relationships, last_modified)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (personid, timestamp, referenceid, status_list, status,  
+                 generation, fsperson, name, gender, born,  
+                 lifespan, fatherid, motherid, relationships, last_modified)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         try:
             cursor.execute( sql,
-                (person.personid, person.timestamp, person.referenceid, person.status_list, person.generation,
-                 person.fsperson, person.name, person.gender, person.born, person.lifespan,
-                 person.fatherid, person.motherid, person.relationships, person.last_modified))
+                (person.personid, person.timestamp, person.referenceid, person.status_list, person.status,
+                 person.generation, person.fsperson, person.name, person.gender, person.born,
+                 person.lifespan, person.fatherid, person.motherid, person.relationships, person.last_modified))
             conn.commit()
             conn.close()
         #
         except sqlite3.Error as e:
-            app.write_log('error', "SQLite INSERT person error occurred:", e.args[0])
+            app.write_log('error', "SQLite INSERT person error occurred: " + e.args[0])
 
     def _get_person(self, personid, referenceid):
         """
@@ -122,8 +123,20 @@ class Database:
             return rows
         #
         except sqlite3.Error as e:
-            app.write_log('error', "SQLite INSERT person error occurred:", e.args[0])
+            app.write_log('error', "SQLite INSERT person error occurred:" + e.args[0])
             return None
+
+    def check_person(self, personid, referenceid):
+        """ check if the person is in the database
+        Args:
+            personid (str):     the FS person object ID
+            referenceid (str):  the FS reference person object ID
+        Returns:
+            (bool): True: the person is persisted in the database, else not peersisted
+        """
+        if self._get_person(personid, referenceid):
+            return True
+        return False
 
     def persist_person(self, person):
         """ persist person to database conditionally
@@ -132,43 +145,63 @@ class Database:
             Result:
                 (list): list with changes in person object
         """
-        chgs = []
-        rows = self._get_person(person.personid, person.referenceid)
-        if rows:
-            # compare downloaded person data to the persisted person data
-            row = rows[0]
-            if person.status_list != row['status_list']:
-                chgs.append('Status of HTTP codes has changed to '+person.status_list+'.')
-            if person.generation != row['generation']:
-                chgs.append('The generation number has changed to '+str(person.generation)+'.')
-            if person.name != row['name']:
-                chgs.append('The name has changed from '+row['name']+' to '+person.name+'.')
-            if person.gender != row['gender']:
-                chgs.append('The gender has changed to '+person.gender+'.')
-            if person.born != row['born']:
-                chgs.append('The birth date has changed from '+row['born']+' to '+person.born+'.')
-            if person.lifespan != row['lifespan']:
-                chgs.append('The lifespan has changed from '+row['lifespan']+' to '+person.lifespan+'.')
-            if person.fatherid != row['fatherid']:
-                chgs.append('The fatherid has changed from ' + row['fatherid'] + ' to ' + person.fatherid + '.')
-            if person.motherid != row['motherid']:
-                chgs.append('The motherid has changed from ' + row['motherid'] + ' to ' + person.motherid + '.')
-            if person.relationships != row['relationships']:
-                chgs.append('Change in relationships: father, mother, spouse, or children.')
-            if person.last_modified != row['last_modified']:
-                chgs.append('Change(s) in the persons change history.')
-            if chgs:
-                chgs.insert(0, 'Changes detected in object: '+person.personid)
-                lines = ''
-                for line in chgs:
-                    lines +=  line + '\n'
-                app.write_log('info', lines[:-2])
-                # add object to the SQLite database
-                self._insert_person(person)
+        if person.status == 'undefined':
+            chgs = []
+            rows = self._get_person(person.personid, person.referenceid)
+            if rows:
+                # compare downloaded person data to the persisted person data
+                row = rows[0]
+                if person.status_list != row['status_list']:
+                    chgs.append('Status of HTTP codes has changed to ' + str(person.status_list) + '.')
+                if person.generation != row['generation']:
+                    chgs.append('The generation number has changed to ' + str(person.generation) + '.')
+                if person.name != row['name']:
+                    chgs.append('The name has changed from ' + row['name'] + ' to ' + person.name + '.')
+                if person.gender != row['gender']:
+                    chgs.append('The gender has changed to ' + person.gender + '.')
+                if person.born != row['born']:
+                    chgs.append('The birth date has changed from ' + row['born'] + ' to ' + person.born + '.')
+                if person.lifespan != row['lifespan']:
+                    chgs.append('The lifespan has changed from ' + row['lifespan'] + ' to ' + person.lifespan + '.')
+                if person.fatherid != row['fatherid']:
+                    chgs.append('The fatherid has changed from ' + row['fatherid'] + ' to ' + person.fatherid + '.')
+                if person.motherid != row['motherid']:
+                    chgs.append('The motherid has changed from ' + row['motherid'] + ' to ' + person.motherid + '.')
+                if person.relationships != row['relationships']:
+                    chgs.append('Change in relationships: father, mother, spouse, or children.')
+                if person.last_modified != row['last_modified']:
+                    chgs.append('Change(s) in the persons change history.')
+                if chgs:
+                    person.status = 'modified'
+                    chgs.insert(0, 'Changes detected in object: ' + person.personid)
+                    self._insert_person(person) # persist modified object
+            return chgs
+
+        elif person.status == 'created':
+            self._insert_person(person) # persist new object in database
+            return ['Created person object ('+person.personid+') in database.']
+
+        elif person.status == 'deleted':
+            rows = self._get_person(person.personid, person.referenceid)
+            if rows:
+                # copy object attributes from database
+                row = rows[0]
+                person.status_list = row['status_list']
+                person.generation = row['generation']
+                person.name = row['name']
+                person.gender = row['gender']
+                person.born = row['born']
+                person.lifespan = row['lifespan']
+                person.fatherid = row['fatherid']
+                person.motherid = row['motherid']
+                person.relationships = row['relationships']
+                person.last_modified = row['last_modified']
+            self._insert_person(person)  # persist deleted object
+            return ['Added copy of deleted person object ('+person.personid+') in database.']
+
         else:
-            # new object in the SQLite database
-            self._insert_person(person)
-        return chgs
+            app.write_log('error', 'Illegal state in person object: '+ person.status)
+            return []
 
     def persist_session(self, timestamp, referenceid, person_count, change_log):
         """ persist session data
@@ -188,16 +221,18 @@ class Database:
             dt_object = datetime.fromtimestamp(timestamp)
             status = 'Timestamp: '+dt_object.strftime("%Y-%m-%d %H:%M:%S")+'. Ancestors for ID: '+referenceid
             if change_log:
-                status += '. Found changes in ancestors.'
+                status += '. Found '+str(len(change_log))+' changes in ancestors.'
             else:
                 status += '. Nothing has changed.'
             app.write_log('info', status)
+            for change in change_log:
+                app.write_log('info', change)
             cursor.execute( sql, (timestamp, person_count, status, json.dumps(change_log)))
             conn.commit()
             conn.close()
         #
         except sqlite3.Error as e:
-            app.write_log('error', "SQLite INSERT session error occurred:", e.args[0])
+            app.write_log('error', "SQLite INSERT session error occurred:" + e.args[0])
 
 
 def main():

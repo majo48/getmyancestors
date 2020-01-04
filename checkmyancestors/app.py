@@ -44,18 +44,19 @@ class PersonObj:
             personid (str):  person id
             generation (int):  generation relative to reference person
             referenceid (str): the person id of the person with generation = 0
-            status (list): HTTP status codes from FamilySearch person and history downloads
+            status_list (list): HTTP status codes from FamilySearch person and history downloads
             fsperson (dict): family search dictionary downloaded for the person id
             fsperson_changes (dict): change history for person id
     """
 
-    def __init__(self, personid, generation, referenceid, status, fsperson, fsperson_changes):
+    def __init__(self, personid, generation, referenceid, status_list, fsperson, fsperson_changes):
         #
         # parameters
         self.personid = personid
         self.generation = generation
         self.referenceid = referenceid
-        self.status_list = json.dumps(status)
+        self.status_list = json.dumps(status_list)
+        self.status = 'undefined'
         self.fsperson = json.dumps(fsperson)
         self.timestamp = global_timestamp
         if fsperson is not None:
@@ -112,8 +113,21 @@ class PersonObj:
         if 429 in json.loads(self.status_list):
             write_log('error', 'HTTP error 429: too many requests')
             return True
-        else:
-            return False
+        return False
+
+    def unreachable(self):
+        """ check for HTTP error codes for: mergers, not found, and deletions """
+        status_list = json.loads(self.status_list)
+        if 301 in status_list:
+            write_log('info', 'Requested person ('+self.personid+') merged into another person')
+            return True
+        elif 404 in status_list:
+            write_log('info', 'Requested person ('+self.personid+') not found.')
+            return True
+        elif 410 in status_list:
+            write_log('info', 'Requested person ('+self.personid+') has been deleted.')
+            return True
+        return False
 
 # ----------
 
@@ -205,12 +219,17 @@ def checkmyancestors(args):
         # loop thru all ancestors in the list
         todo = todolist.pop(0)
         person: PersonObj = get_person_object( todo['personid'], todo['generation'], todo['referenceid'], fs )
+        if db.check_person(person.personid, person.referenceid) == False:
+            person.status = 'created'
+        # check HTTP status codes
+        if person.too_many_requests():
+            break
+        if person.unreachable():
+            person.status = 'deleted'
+        # persist person to database
         changes = changes + db.persist_person(person)
         write_log('info', 'Person: ID='+person.personid+', Name='+person.name+' ('+person.lifespan+')')
         person_count += 1
-        # check HTTP status code
-        if person.too_many_requests():
-            break
         # check person's father
         if ((person.fatherid is not None) and
             ((args.type == 'bioline') or (args.type == 'patriline'))):
