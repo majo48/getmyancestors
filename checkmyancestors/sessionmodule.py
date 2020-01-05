@@ -200,18 +200,27 @@ class Session:
 
 
 class TestSessionModule(unittest.TestCase):
+    fs = None
 
-    def test_credentials(self):
+    def setUp(self):
+        pass
+
+    def test_1_credentials(self):
         # checks for the existance of file checkmyancestors/credentials.py
         self.assertIsInstance(credentials.username, str, "Username must be defined.")
         self.assertIsInstance(credentials.password, str, "Password must be defined")
 
-    def test_login(self):
+    def test_2_login(self):
         # check for successfull login
-        self.fs = Session( username=credentials.username, password=credentials.password, timeout=10 )
-        self.assertIsInstance(self.fs, Session)
-        self.assertTrue(self.fs.logged, "Login failed.")
+        self.__class__.fs = Session( username=credentials.username, password=credentials.password, timeout=10 )
+        self.assertIsInstance(self.__class__.fs, Session)
+        self.assertTrue(self.__class__.fs.logged, "Login failed.")
 
+    def test_3_get_person(self):
+        # check for download of Thomas Alva Edison
+        person = self.__class__.fs.get_person('LZ2Q-W96')
+        personid = person['description']
+        self.assertEqual(personid, '#SD-LZ2Q-W96')
 
 if __name__ == "__main__":
     unittest.main()
