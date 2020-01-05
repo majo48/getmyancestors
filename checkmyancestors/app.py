@@ -109,7 +109,10 @@ class PersonObj:
             return {"father": None, "mother": None}
 
     def has_bad_requests(self):
-        """ check for HTTP error code 429: too many requests """
+        """ check for HTTP error code 429: too many requests
+            Return:
+                (bool): True = code 429 happened, False = not
+        """
         return_code = False
         valid_codes = (200, 301, 404, 410, 429)
         status_list = json.loads(self.status_list)
@@ -124,7 +127,10 @@ class PersonObj:
         return return_code
 
     def is_unreachable(self):
-        """ check for HTTP error codes for: mergers, not found, and deletions """
+        """ check for HTTP error codes for: mergers, not found, and deletions
+            Return:
+                (bool): True = person object is unreachable, False = OK
+        """
         status_list = json.loads(self.status_list)
         if 301 in status_list:
             write_log('info', 'Requested person ('+self.personid+') merged into another person')
@@ -139,7 +145,6 @@ class PersonObj:
 
 # ----------
 
-
 def read_nested_dict(fsdict: dict, *args):
     """
         Extract the arguments part from the dictionary data from FamilySearch.
@@ -149,6 +154,8 @@ def read_nested_dict(fsdict: dict, *args):
             *args (tuple): sequence of indexes in above dictionary
         Returns:
             value (str, int, list, or dict)
+        Note:
+            This function needs to be (reason unknown) 'outside' of the Person object.
     """
     try:
         x = fsdict.copy()
@@ -200,15 +207,17 @@ def get_person_object(person_id: str, generation: int, reference_id: str, fs: se
 
 
 def verify_data(reference_id, checklist):
-    """ compare checklist with the persisted data """
+    """ compare checklist with the persisted data
+        Args:
+            reference_id (str): the reference person who's ancestors are queried
+            checklist (list): list of all persons (str) queried
+    """
     db = dbm.Database() # SQLlite database
     persons = db.get_persons(reference_id)
     for person in persons:
         pid = person['personid']
         if pid not in checklist:
             write_log('error', 'Found person ' + pid + ' in database, but not in FamilySearch (missing).' )
-
-    dummy = 'stop'
 
 # ----------
 
