@@ -3,6 +3,7 @@
 *.log
 *.settings
 *.db
+*.cfg
 .vscode/
 scratchpad.py
 
