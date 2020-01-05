@@ -106,11 +106,10 @@ class Database:
             app.write_log('error', "SQLite INSERT person error occurred: " + e.args[0])
 
     def _get_person(self, personid, referenceid):
-        """
-        Get the most recent persisted person with personid and referenceid from the SQLite database
+        """ Get the most recent persisted person with personid and referenceid from the SQLite database
         Args:
-            personid (str):
-            referenceid (str):
+            personid (str):    the ID of the ancestor
+            referenceid (str): the ID of the reference person
         Returns:
             (list) with the most recent matching record (dict) in [0] or None
         """
@@ -126,6 +125,27 @@ class Database:
         except sqlite3.Error as e:
             app.write_log('error', "SQLite INSERT person error occurred:" + e.args[0])
             return None
+
+    def get_persons(self, referenceid):
+        """ Get the most recent persisted persons with referenceid from the SQLite database
+            Args:
+                referenceid (str): the ID of the reference person
+            Returns:
+                (list) with the most recent matching records (dict)
+        """
+        conn: Connection = self._get_connection()
+        conn.row_factory = sqlite3.Row
+        cursor: Cursor = conn.cursor()
+        sql = 'SELECT * FROM persons WHERE referenceid = ? ORDER BY timestamp DESC'
+        try:
+            cursor.execute( sql, [referenceid])
+            rows = [dict(row) for row in cursor.fetchall()] # convert sqlite3.Row
+            return rows
+        #
+        except sqlite3.Error as e:
+            app.write_log('error', "SQLite INSERT person error occurred:" + e.args[0])
+            return None
+
 
     def check_person(self, personid, referenceid):
         """ check if the person is in the database

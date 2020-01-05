@@ -199,6 +199,20 @@ def get_person_object(person_id: str, generation: int, reference_id: str, fs: se
 # ----------
 
 
+def verify_data(reference_id, checklist):
+    """ compare checklist with the persisted data """
+    db = dbm.Database() # SQLlite database
+    persons = db.get_persons(reference_id)
+    for person in persons:
+        pid = person['personid']
+        if pid not in checklist:
+            write_log('error', 'Found person ' + pid + ' in database, but not in FamilySearch (missing).' )
+
+    dummy = 'stop'
+
+# ----------
+
+
 def checkmyancestors(args):
     """
     This is the heavy lifting part of the application, persisting FamilySearch data in a database.
@@ -217,6 +231,7 @@ def checkmyancestors(args):
     if args.individual is not None:
         reference_id = args.individual
     # initialize loop
+    checklist = []
     changes = []
     person_count = 0
     todolist = []
@@ -227,6 +242,7 @@ def checkmyancestors(args):
         # loop thru all ancestors in the list
         todo = todolist.pop(0)
         person: PersonObj = get_person_object( todo['personid'], todo['generation'], todo['referenceid'], fs )
+        checklist.append(person.personid)
         if db.check_person(person.personid, person.referenceid) == False:
             person.status = 'created'
         # check HTTP status codes
@@ -250,6 +266,7 @@ def checkmyancestors(args):
             todolist.append(
                 {'personid': person.motherid, 'generation': person.generation+1, 'referenceid': reference_id}
             )
+    verify_data(reference_id, checklist)
     db.persist_session(global_timestamp, reference_id, person_count, changes)
 
 # ----------
