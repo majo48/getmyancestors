@@ -33,9 +33,9 @@ from datetime import datetime
 from checkmyancestors import databasemodule as dbm
 from checkmyancestors import sessionmodule as sem
 
-#global variables
-global_timestamp = None
-global_args = None
+# module variables
+timestamp_app = 0
+debug_app = False
 
 
 class PersonObj:
@@ -58,7 +58,7 @@ class PersonObj:
         self.status_list = json.dumps(status_list)
         self.status = 'undefined'
         self.fsperson = json.dumps(fsperson)
-        self.timestamp = global_timestamp
+        self.timestamp = timestamp_app
         if fsperson is not None:
             # FamilySearch.person.display
             disp = read_nested_dict(fsperson, "persons", 0, "display")
@@ -185,7 +185,7 @@ def write_log(level, text):
         sys.stderr.write(log)
 
     if (level == 'debug'):
-        if (global_args.debug == 'on'):
+        if debug_app:
             wr(level, text)
     elif (level == 'error') or (level == 'info'):
         wr(level, text)
@@ -227,11 +227,9 @@ def checkmyancestors(args):
     This is the heavy lifting part of the application, persisting FamilySearch data in a database.
     The database also contains created, updated, deleted metadata for all ancestors
     """
-    global global_timestamp
     now = datetime.now()
-    global_timestamp = int(datetime.timestamp(now))
-    global global_args
-    global_args = args
+    timestamp_app = int(datetime.timestamp(now))
+    debug_app = (args.debug == 'on')
     # objects
     db = dbm.Database() # SQLlite database
     fs = sem.Session(args.username, args.password, timeout=10) # FamilySearch
@@ -276,7 +274,7 @@ def checkmyancestors(args):
                 {'personid': person.motherid, 'generation': person.generation+1, 'referenceid': reference_id}
             )
     verify_data(reference_id, checklist)
-    db.persist_session(global_timestamp, reference_id, person_count, changes)
+    db.persist_session(timestamp_app, reference_id, person_count, changes)
 
 # ----------
 

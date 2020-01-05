@@ -27,10 +27,12 @@
 
 
 # global import
-import sys
+import os
 import time
 import requests
+import unittest
 from checkmyancestors import app
+from checkmyancestors import credentials
 
 class Session:
     """ Create a FamilySearch session
@@ -197,9 +199,19 @@ class Session:
         return string
 
 
-def main():
-    """ main: databasemodule.py """
-    print('This module is not a script, but part of the checkmyancestors application.')
+class TestSessionModule(unittest.TestCase):
+
+    def test_credentials(self):
+        # checks for the existance of file checkmyancestors/credentials.py
+        self.assertIsInstance(credentials.username, str, "Username must be defined.")
+        self.assertIsInstance(credentials.password, str, "Password must be defined")
+
+    def test_login(self):
+        # check for successfull login
+        self.fs = Session( username=credentials.username, password=credentials.password, timeout=10 )
+        self.assertIsInstance(self.fs, Session)
+        self.assertTrue(self.fs.logged, "Login failed.")
+
 
 if __name__ == "__main__":
-            main()
+    unittest.main()

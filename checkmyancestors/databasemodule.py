@@ -33,6 +33,7 @@ from datetime import datetime
 from sqlite3.dbapi2 import Connection, Cursor
 from checkmyancestors import app
 
+
 class Database:
     """
         SQLite database for persisting FamilySearch ancestors.
