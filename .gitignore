@@ -4,6 +4,7 @@
 *.settings
 *.db
 *.cfg
+credentials.py
 .vscode/
 scratchpad.py
 
