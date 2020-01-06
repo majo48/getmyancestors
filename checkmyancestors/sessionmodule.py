@@ -247,7 +247,7 @@ class TestSessionModule(unittest.TestCase):
                 self.assertIn('parent2', relation, 'Relationship shall contain "parent2" element.')
                 self.assertIn('child', relation, 'Relationship shall contain "child" element.')
         except:
-            self.assertTrue(False, 'Missing "display" element in "person" object.')
+            self.assertTrue(False, 'Missing "relationships" element(s) in "person" object.')
 
 
 if __name__ == "__main__":
