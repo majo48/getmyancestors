@@ -233,6 +233,10 @@ def checkmyancestors(args):
     # objects
     db = dbm.Database() # SQLlite database
     fs = sem.Session(args.username, args.password, timeout=10) # FamilySearch
+    if not fs.logged:
+        write_log('info', "Failed to login as user: " + args.username)
+        return
+    write_log('info', "Successfully logged in as user: " + args.username)
     # reference_id
     reference_id = fs.fid
     if args.individual is not None:

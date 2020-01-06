@@ -106,7 +106,6 @@ class Session:
                 app.write_log('debug', "ValueError")
                 time.sleep(self.timeout)
                 continue
-            app.write_log('info', "Successfully logged in as user: " + self.username)
             app.write_log('debug', "FamilySearch session id: " + self.fssessionid)
             self.set_current()
             return True
