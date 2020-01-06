@@ -33,9 +33,8 @@ from datetime import datetime
 from checkmyancestors import databasemodule as dbm
 from checkmyancestors import sessionmodule as sem
 
-# module variables
-timestamp_app = 0
-debug_app = False
+# module variable
+debug_app = False # used in write_log
 
 
 class PersonObj:
@@ -46,10 +45,11 @@ class PersonObj:
             referenceid (str): the person id of the person with generation = 0
             status_list (list): HTTP status codes from FamilySearch person and history downloads
             fsperson (dict): family search dictionary downloaded for the person id
+            timestamp (int): the timestamp for the whole session
             fsperson_changes (dict): change history for person id
     """
 
-    def __init__(self, personid, generation, referenceid, status_list, fsperson, fsperson_changes):
+    def __init__(self, personid, generation, referenceid, status_list, fsperson, timestamp, fsperson_changes):
         #
         # parameters
         self.personid = personid
@@ -58,7 +58,7 @@ class PersonObj:
         self.status_list = json.dumps(status_list)
         self.status = 'undefined'
         self.fsperson = json.dumps(fsperson)
-        self.timestamp = timestamp_app
+        self.timestamp = timestamp
         if fsperson is not None:
             # FamilySearch.person.display
             disp = read_nested_dict(fsperson, "persons", 0, "display")
@@ -195,12 +195,13 @@ def write_log(level, text):
 # ----------
 
 
-def get_person_object(person_id, generation, reference_id, fs):
+def get_person_object(person_id, generation, reference_id, timestamp, fs):
     """ download person data from the FamilySearch site
         Args:
             person_id (str): person id in family search
             generation (int): generation, starts at 0, ascending
             reference_id (str): reference peerson (generation 0)
+            timestamp (int): timestamp for the whole session
             fs (Session): logged in session object
         Returns:
             (PersonObj)
@@ -209,7 +210,7 @@ def get_person_object(person_id, generation, reference_id, fs):
     fs_status = [ fs.status_code ]
     fs_change = fs.get_change_history_person(person_id)
     fs_status.append(fs.status_code)
-    return PersonObj(person_id, generation, reference_id, fs_status, fs_person, fs_change)
+    return PersonObj(person_id, generation, reference_id, fs_status, fs_person, timestamp, fs_change)
 
 # ----------
 
@@ -236,7 +237,7 @@ def checkmyancestors(args):
     The database also contains created, updated, deleted metadata for all ancestors
     """
     now = datetime.now()
-    timestamp_app = int(datetime.timestamp(now))
+    timestamp = int(datetime.timestamp(now))
     debug_app = (args.debug == 'on')
     # objects
     db = dbm.Database() # SQLlite database
@@ -260,7 +261,7 @@ def checkmyancestors(args):
     while todolist:
         # loop thru all ancestors in the list
         todo = todolist.pop(0)
-        person: PersonObj = get_person_object( todo['personid'], todo['generation'], todo['referenceid'], fs )
+        person = get_person_object( todo['personid'], todo['generation'], todo['referenceid'], timestamp, fs )
         checklist.append(person.personid)
         if db.check_person(person.personid, person.referenceid) == False:
             person.status = 'created'
@@ -286,7 +287,7 @@ def checkmyancestors(args):
                 {'personid': person.motherid, 'generation': person.generation+1, 'referenceid': reference_id}
             )
     verify_data(reference_id, checklist)
-    db.persist_session(timestamp_app, reference_id, person_count, changes)
+    db.persist_session(timestamp, reference_id, person_count, changes)
 
 # ----------
 

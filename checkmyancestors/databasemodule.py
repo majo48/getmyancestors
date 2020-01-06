@@ -46,6 +46,7 @@ class Database:
         try:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS persons (
+        	        id            INTEGER PRIMARY KEY,
         	        personid      TEXT NOT NULL,
 	                timestamp	  INTEGER NOT NULL,
 	                referenceid   TEXT NOT NULL,
@@ -60,16 +61,17 @@ class Database:
 	                fatherid      TEXT,
 	                motherid      TEXT,
 	                relationships TEXT,
-	                last_modified INTEGER,
-	                PRIMARY KEY(personid,timestamp,referenceid)); """)
+	                last_modified INTEGER); 
+	                """)
             conn.commit()
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS sessions (
+	                id            INTEGER PRIMARY KEY,
 	                timestamp     INTEGER NOT NULL,
 	                person_count  INTEGER NOT NULL,
 	                status        TEXT,
-	                change_log    TEXT,
-	                PRIMARY KEY(timestamp)); """)
+	                change_log    TEXT); 
+	                """)
             conn.commit()
             conn.close()
         #
