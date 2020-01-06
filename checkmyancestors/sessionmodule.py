@@ -31,6 +31,7 @@ import os
 import time
 import requests
 import unittest
+import json
 from checkmyancestors import app
 from checkmyancestors import credentials
 
@@ -200,14 +201,15 @@ class Session:
 
 class TestSessionModule(unittest.TestCase):
     fs = None
+    person = None
 
     def setUp(self):
         pass
 
     def test_1_credentials(self):
-        # checks for the existance of file checkmyancestors/credentials.py
-        self.assertIsInstance(credentials.username, str, "Username must be defined.")
-        self.assertIsInstance(credentials.password, str, "Password must be defined")
+        # checks for the existence of file checkmyancestors/credentials.py
+        self.assertIsInstance(credentials.username, str, "Username shall be defined.")
+        self.assertIsInstance(credentials.password, str, "Password shall be defined")
 
     def test_2_login(self):
         # check for successfull login
@@ -218,8 +220,35 @@ class TestSessionModule(unittest.TestCase):
     def test_3_get_person(self):
         # check for download of Thomas Alva Edison
         person = self.__class__.fs.get_person('LZ2Q-W96')
-        personid = person['description']
-        self.assertEqual(personid, '#SD-LZ2Q-W96')
+        self.assertIn('description', person, 'Dictionary shall contain "description" element.')
+        self.assertEqual(person['description'], '#SD-LZ2Q-W96')
+        self.__class__.person = person
+
+    def test_4_display(self):
+        # check the display part of person data
+        person = self.__class__.person
+        try:
+            display = person['persons'][0]['display']
+        except:
+            self.assertTrue(False, 'Missing "display" element in "person" object.')
+            return
+        self.assertIn( 'name', display,
+                       'The "display" element shall contain the "name" attribute.' )
+        self.assertEqual(display['name'], 'Thomas Alva Edison')
+
+    def test_5_relationships(self):
+        # check the relationships part of person data
+        person = self.__class__.person
+        self.assertIn( 'childAndParentsRelationships', person,
+                       'The "person" object shall contain the "childAndParentsRelationships" attribute.' )
+        try:
+            for relation in person["childAndParentsRelationships"]:
+                self.assertIn('parent1', relation, 'Relationship shall contain "parent1" element.')
+                self.assertIn('parent2', relation, 'Relationship shall contain "parent2" element.')
+                self.assertIn('child', relation, 'Relationship shall contain "child" element.')
+        except:
+            self.assertTrue(False, 'Missing "display" element in "person" object.')
+
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(failfast=True)

@@ -195,8 +195,16 @@ def write_log(level, text):
 # ----------
 
 
-def get_person_object(person_id: str, generation: int, reference_id: str, fs: sem.Session):
-    """ download person data from the FamilySearch site """
+def get_person_object(person_id, generation, reference_id, fs):
+    """ download person data from the FamilySearch site
+        Args:
+            person_id (str): person id in family search
+            generation (int): generation, starts at 0, ascending
+            reference_id (str): reference peerson (generation 0)
+            fs (Session): logged in session object
+        Returns:
+            (PersonObj)
+    """
     fs_person = fs.get_person(person_id)
     fs_status = [ fs.status_code ]
     fs_change = fs.get_change_history_person(person_id)
