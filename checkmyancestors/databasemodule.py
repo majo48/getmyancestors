@@ -73,6 +73,23 @@ class Database:
 	                change_log    TEXT); 
 	                """)
             conn.commit()
+            cursor.execute("""
+                CREATE VIEW IF NOT EXISTS ancestors
+                AS
+                    SELECT
+                        -- list of ancestors in the persisted data
+                        generation, name, gender, lifespan, personid, fatherid, motherid, referenceid, timestamp
+                    FROM persons
+                    WHERE referenceid = (
+                        SELECT referenceid FROM (
+                            -- latest referencid in the persisted data
+                            SELECT  referenceid, max(timestamp) FROM persons WHERE personid = referenceid GROUP BY referenceid
+                        )
+                    )
+                    AND id in (SELECT id FROM (SELECT id, max(timestamp) FROM persons GROUP BY generation, referenceid, gender))
+                    ORDER BY generation ASC, gender DESC    
+            	    """)
+            conn.commit()
             conn.close()
         #
         except sqlite3.Error as e:
