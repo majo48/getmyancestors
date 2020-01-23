@@ -35,6 +35,7 @@ import json
 from checkmyancestors import app
 from checkmyancestors import credentials
 
+
 class Session:
     """ Create a FamilySearch session
         :param username and password: valid FamilySearch credentials
@@ -50,7 +51,6 @@ class Session:
         self.logged = self.login()
         self.status_code = 200
 
-
     def login(self):
         """ retrieve FamilySearch session ID
             (https://familysearch.org/developers/docs/guides/oauth2)
@@ -59,24 +59,32 @@ class Session:
             try:
                 url = "https://www.familysearch.org/auth/familysearch/login"
                 app.write_log('debug', "Downloading: " + url)
-                r = requests.get(url, params={"ldsauth": False}, allow_redirects=False)
+                r = requests.get(
+                    url,
+                    params={
+                        "ldsauth": False},
+                    allow_redirects=False)
                 url = r.headers["Location"]
                 app.write_log('debug', "Downloading: " + url)
                 r = requests.get(url, allow_redirects=False)
                 idx = r.text.index('name="params" value="')
-                span = r.text[idx + 21 :].index('"')
-                params = r.text[idx + 21 : idx + 21 + span]
+                span = r.text[idx + 21:].index('"')
+                params = r.text[idx + 21: idx + 21 + span]
 
                 url = "https://ident.familysearch.org/cis-web/oauth2/v3/authorization"
                 app.write_log('debug', "Downloading: " + url)
                 r = requests.post(
                     url,
-                    data={"params": params, "userName": self.username, "password": self.password},
+                    data={
+                        "params": params,
+                        "userName": self.username,
+                        "password": self.password},
                     allow_redirects=False,
                 )
 
                 if "The username or password was incorrect" in r.text:
-                    app.write_log('error', "The username or password was incorrect")
+                    app.write_log(
+                        'error', "The username or password was incorrect")
                     return False
 
                 if "Invalid Oauth2 Request" in r.text:
@@ -107,7 +115,10 @@ class Session:
                 app.write_log('debug', "ValueError")
                 time.sleep(self.timeout)
                 continue
-            app.write_log('debug', "FamilySearch session id: " + self.fssessionid)
+            app.write_log(
+                'debug',
+                "FamilySearch session id: " +
+                self.fssessionid)
             self.set_current()
             return True
 
@@ -137,7 +148,8 @@ class Session:
             app.write_log('debug', "Status code: %s" % r.status_code)
             self.status_code = r.status_code
             if r.status_code == 204:
-                # The request was successful but nothing was available to return.
+                # The request was successful but nothing was available to
+                # return.
                 return None
             if r.status_code in {404, 405, 406, 410, 429, 500, 503, 504}:
                 # 404: A resource was requested that does not exist.
@@ -148,7 +160,12 @@ class Session:
                 # 500: Internal Server Error.
                 # 503: Service Unavailable.
                 # 504: Gateway Timeout.
-                app.write_log('debug', "WARNING: code " + r.status_code + ", " + url)
+                app.write_log(
+                    'debug',
+                    "WARNING: code " +
+                    r.status_code +
+                    ", " +
+                    url)
                 return None
             if r.status_code == 401:
                 # The user is not properly authenticated.
@@ -159,8 +176,14 @@ class Session:
             except requests.exceptions.HTTPError:
                 app.write_log('debug', "HTTPError")
                 if r.status_code == 403:
-                    # A resource was requested that the user does not have permission to access.
-                    app.write_log('debug', "WARNING: code " + r.status_code + ", " + url)
+                    # A resource was requested that the user does not have
+                    # permission to access.
+                    app.write_log(
+                        'debug',
+                        "WARNING: code " +
+                        r.status_code +
+                        ", " +
+                        url)
                     return None
                 time.sleep(self.timeout)
                 continue
@@ -169,7 +192,9 @@ class Session:
             except Exception as e:
                 # 420: Methode failure
                 self.status_code = 420
-                app.write_log('error', "WARNING: corrupted file from %s, error: %s" % (url, e))
+                app.write_log(
+                    'error', "WARNING: corrupted file from %s, error: %s" %
+                    (url, e))
                 return None
         return None
 
@@ -208,19 +233,31 @@ class TestSessionModule(unittest.TestCase):
 
     def test_1_credentials(self):
         # checks for the existence of file checkmyancestors/credentials.py
-        self.assertIsInstance(credentials.username, str, "Username shall be defined.")
-        self.assertIsInstance(credentials.password, str, "Password shall be defined")
+        self.assertIsInstance(
+            credentials.username,
+            str,
+            "Username shall be defined.")
+        self.assertIsInstance(
+            credentials.password,
+            str,
+            "Password shall be defined")
 
     def test_2_login(self):
         # check for successfull login
-        self.__class__.fs = Session( username=credentials.username, password=credentials.password, timeout=10 )
+        self.__class__.fs = Session(
+            username=credentials.username,
+            password=credentials.password,
+            timeout=10)
         self.assertIsInstance(self.__class__.fs, Session)
         self.assertTrue(self.__class__.fs.logged, "Login failed.")
 
     def test_3_get_person(self):
         # check for download of Thomas Alva Edison
         person = self.__class__.fs.get_person('LZ2Q-W96')
-        self.assertIn('description', person, 'Dictionary shall contain "description" element.')
+        self.assertIn(
+            'description',
+            person,
+            'Dictionary shall contain "description" element.')
         self.assertEqual(person['description'], '#SD-LZ2Q-W96')
         self.__class__.person = person
 
@@ -229,25 +266,40 @@ class TestSessionModule(unittest.TestCase):
         person = self.__class__.person
         try:
             display = person['persons'][0]['display']
-        except:
-            self.assertTrue(False, 'Missing "display" element in "person" object.')
+        except BaseException:
+            self.assertTrue(
+                False, 'Missing "display" element in "person" object.')
             return
-        self.assertIn( 'name', display,
-                       'The "display" element shall contain the "name" attribute.' )
+        self.assertIn(
+            'name',
+            display,
+            'The "display" element shall contain the "name" attribute.')
         self.assertEqual(display['name'], 'Thomas Alva Edison')
 
     def test_5_relationships(self):
         # check the relationships part of person data
         person = self.__class__.person
-        self.assertIn( 'childAndParentsRelationships', person,
-                       'The "person" object shall contain the "childAndParentsRelationships" attribute.' )
+        self.assertIn(
+            'childAndParentsRelationships',
+            person,
+            'The "person" object shall contain the "childAndParentsRelationships" attribute.')
         try:
             for relation in person["childAndParentsRelationships"]:
-                self.assertIn('parent1', relation, 'Relationship shall contain "parent1" element.')
-                self.assertIn('parent2', relation, 'Relationship shall contain "parent2" element.')
-                self.assertIn('child', relation, 'Relationship shall contain "child" element.')
-        except:
-            self.assertTrue(False, 'Missing "relationships" element(s) in "person" object.')
+                self.assertIn(
+                    'parent1',
+                    relation,
+                    'Relationship shall contain "parent1" element.')
+                self.assertIn(
+                    'parent2',
+                    relation,
+                    'Relationship shall contain "parent2" element.')
+                self.assertIn(
+                    'child',
+                    relation,
+                    'Relationship shall contain "child" element.')
+        except BaseException:
+            self.assertTrue(
+                False, 'Missing "relationships" element(s) in "person" object.')
 
 
 if __name__ == "__main__":

@@ -34,7 +34,7 @@ from checkmyancestors import databasemodule as dbm
 from checkmyancestors import sessionmodule as sem
 
 # module variable
-debug_app = False # used in write_log
+debug_app = False  # used in write_log
 
 
 class PersonObj:
@@ -49,7 +49,15 @@ class PersonObj:
             fsperson_changes (dict): change history for person id
     """
 
-    def __init__(self, personid, generation, referenceid, status_list, fsperson, timestamp, fsperson_changes):
+    def __init__(
+            self,
+            personid,
+            generation,
+            referenceid,
+            status_list,
+            fsperson,
+            timestamp,
+            fsperson_changes):
         #
         # parameters
         self.personid = personid
@@ -72,7 +80,7 @@ class PersonObj:
             self.motherid = parents["mother"]
             # FamilySearch.person.relationships(list) for person
             relationships = read_nested_dict(fsperson, "relationships")
-            relationships_asc = sorted( relationships, key=lambda k: k['id'])
+            relationships_asc = sorted(relationships, key=lambda k: k['id'])
             self.relationships = json.dumps(relationships_asc)
         else:
             self.name = None
@@ -105,7 +113,11 @@ class PersonObj:
                         return {"father": father, "mother": mother}
             return {"father": None, "mother": None}
         except Exception as err:
-            write_log('error', "Exception(1): key '"+err.args[0]+"' not found in FS.childAndParentsRelationships.")
+            write_log(
+                'error',
+                "Exception(1): key '" +
+                err.args[0] +
+                "' not found in FS.childAndParentsRelationships.")
             return {"father": None, "mother": None}
 
     def has_bad_requests(self):
@@ -122,7 +134,7 @@ class PersonObj:
         #
         if 429 in status_list:
             write_log('error', 'HTTP error 429: too many requests')
-            return_code = True # breaks outer loop
+            return_code = True  # breaks outer loop
         #
         return return_code
 
@@ -133,17 +145,30 @@ class PersonObj:
         """
         status_list = json.loads(self.status_list)
         if 301 in status_list:
-            write_log('info', 'Requested person ('+self.personid+') merged into another person')
+            write_log(
+                'info',
+                'Requested person (' +
+                self.personid +
+                ') merged into another person')
             return True
         elif 404 in status_list:
-            write_log('info', 'Requested person ('+self.personid+') not found.')
+            write_log(
+                'info',
+                'Requested person (' +
+                self.personid +
+                ') not found.')
             return True
         elif 410 in status_list:
-            write_log('info', 'Requested person ('+self.personid+') has been deleted.')
+            write_log(
+                'info',
+                'Requested person (' +
+                self.personid +
+                ') has been deleted.')
             return True
         return False
 
 # ----------
+
 
 def read_nested_dict(fsdict: dict, *args):
     """
@@ -168,7 +193,11 @@ def read_nested_dict(fsdict: dict, *args):
                 return None
         return x
     except Exception as err:
-        write_log('error', "Exception(2): index '"+err.args[0]+"' not found in FS.parents.")
+        write_log(
+            'error',
+            "Exception(2): index '" +
+            err.args[0] +
+            "' not found in FS.parents.")
         return None
 
 # ----------
@@ -181,7 +210,8 @@ def write_log(level, text):
     """
     def wr(level, text):
         """ write text to stderr """
-        log = "[%s] %s: %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), level.upper(), text)
+        log = "[%s] %s: %s\n" % (time.strftime(
+            "%Y-%m-%d %H:%M:%S"), level.upper(), text)
         sys.stderr.write(log)
 
     if (level == 'debug'):
@@ -190,7 +220,7 @@ def write_log(level, text):
     elif (level == 'error') or (level == 'info'):
         wr(level, text)
     else:
-        wr('error', 'Bug detected in app.write_log: illegal level('+level+').')
+        wr('error', 'Bug detected in app.write_log: illegal level(' + level + ').')
 
 # ----------
 
@@ -207,10 +237,17 @@ def get_person_object(person_id, generation, reference_id, timestamp, fs):
             (PersonObj)
     """
     fs_person = fs.get_person(person_id)
-    fs_status = [ fs.status_code ]
+    fs_status = [fs.status_code]
     fs_change = fs.get_change_history_person(person_id)
     fs_status.append(fs.status_code)
-    return PersonObj(person_id, generation, reference_id, fs_status, fs_person, timestamp, fs_change)
+    return PersonObj(
+        person_id,
+        generation,
+        reference_id,
+        fs_status,
+        fs_person,
+        timestamp,
+        fs_change)
 
 # ----------
 
@@ -221,12 +258,16 @@ def verify_data(reference_id, checklist):
             reference_id (str): the reference person who's ancestors are queried
             checklist (list): list of all persons (str) queried
     """
-    db = dbm.Database() # SQLlite database
+    db = dbm.Database()  # SQLlite database
     persons = db.get_persons(reference_id)
     for person in persons:
         pid = person['personid']
         if pid not in checklist:
-            write_log('error', 'Found person ' + pid + ' in database, but not in FamilySearch (missing).' )
+            write_log(
+                'error',
+                'Found person ' +
+                pid +
+                ' in database, but not in FamilySearch (missing).')
 
 # ----------
 
@@ -240,8 +281,8 @@ def checkmyancestors(args):
     timestamp = int(datetime.timestamp(now))
     debug_app = (args.debug == 'on')
     # objects
-    db = dbm.Database() # SQLlite database
-    fs = sem.Session(args.username, args.password, timeout=10) # FamilySearch
+    db = dbm.Database()  # SQLlite database
+    fs = sem.Session(args.username, args.password, timeout=10)  # FamilySearch
     if not fs.logged:
         write_log('info', "Failed to login as user: " + args.username)
         return
@@ -255,13 +296,17 @@ def checkmyancestors(args):
     changes = []
     person_count = 0
     todolist = []
-    todolist.append(
-        {'personid': reference_id, 'generation': 0, 'referenceid': reference_id}
-    )
+    todolist.append({'personid': reference_id,
+                     'generation': 0, 'referenceid': reference_id})
     while todolist:
         # loop thru all ancestors in the list
         todo = todolist.pop(0)
-        person = get_person_object( todo['personid'], todo['generation'], todo['referenceid'], timestamp, fs )
+        person = get_person_object(
+            todo['personid'],
+            todo['generation'],
+            todo['referenceid'],
+            timestamp,
+            fs)
         checklist.append(person.personid)
         if db.check_person(person.personid, person.referenceid) == False:
             person.status = 'created'
@@ -272,20 +317,21 @@ def checkmyancestors(args):
             person.status = 'deleted'
         # persist person to database
         changes = changes + db.persist_person(person)
-        write_log('info', 'Person: ID='+person.personid+', Name='+person.name+' ('+person.lifespan+')')
+        write_log('info', 'Person: ID=' + person.personid +
+                  ', Name=' + person.name + ' (' + person.lifespan + ')')
         person_count += 1
         # check person's father
         if ((person.fatherid is not None) and
-            ((args.type == 'bioline') or (args.type == 'patriline'))):
-            todolist.append(
-                {'personid': person.fatherid, 'generation': person.generation+1, 'referenceid': reference_id}
-            )
+                ((args.type == 'bioline') or (args.type == 'patriline'))):
+            todolist.append({'personid': person.fatherid,
+                             'generation': person.generation + 1,
+                             'referenceid': reference_id})
         # check person's mother
         if ((person.motherid is not None) and
-            ((args.type == 'bioline') or (args.type == 'matriline'))):
-            todolist.append(
-                {'personid': person.motherid, 'generation': person.generation+1, 'referenceid': reference_id}
-            )
+                ((args.type == 'bioline') or (args.type == 'matriline'))):
+            todolist.append({'personid': person.motherid,
+                             'generation': person.generation + 1,
+                             'referenceid': reference_id})
     verify_data(reference_id, checklist)
     db.persist_session(timestamp, reference_id, person_count, changes)
 

@@ -61,7 +61,7 @@ class Database:
 	                fatherid      TEXT,
 	                motherid      TEXT,
 	                relationships TEXT,
-	                last_modified INTEGER); 
+	                last_modified INTEGER);
 	                """)
             conn.commit()
             cursor.execute("""
@@ -70,7 +70,7 @@ class Database:
 	                timestamp     INTEGER NOT NULL,
 	                person_count  INTEGER NOT NULL,
 	                status        TEXT,
-	                change_log    TEXT); 
+	                change_log    TEXT);
 	                """)
             conn.commit()
             cursor.execute("""
@@ -87,13 +87,16 @@ class Database:
                         )
                     )
                     AND id in (SELECT id FROM (SELECT id, max(timestamp) FROM persons GROUP BY generation, referenceid, gender))
-                    ORDER BY generation ASC, gender DESC    
+                    ORDER BY generation ASC, gender DESC
             	    """)
             conn.commit()
             conn.close()
         #
         except sqlite3.Error as e:
-            app.write_log('error', "SQLite CREATE TABLE error occurred:" + e.args[0])
+            app.write_log(
+                'error',
+                "SQLite CREATE TABLE error occurred:" +
+                e.args[0])
 
     def _get_connection(self):
         """ get SQLite connection object """
@@ -108,22 +111,38 @@ class Database:
         conn: Connection = self._get_connection()
         cursor: Cursor = conn.cursor()
         sql = """
-            INSERT INTO persons 
-                (personid, timestamp, referenceid, status_list, status,  
-                 generation, fsperson, name, gender, born,  
+            INSERT INTO persons
+                (personid, timestamp, referenceid, status_list, status,
+                 generation, fsperson, name, gender, born,
                  lifespan, fatherid, motherid, relationships, last_modified)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         try:
-            cursor.execute( sql,
-                (person.personid, person.timestamp, person.referenceid, person.status_list, person.status,
-                 person.generation, person.fsperson, person.name, person.gender, person.born,
-                 person.lifespan, person.fatherid, person.motherid, person.relationships, person.last_modified))
+            cursor.execute(
+                sql,
+                (person.personid,
+                 person.timestamp,
+                 person.referenceid,
+                 person.status_list,
+                 person.status,
+                 person.generation,
+                 person.fsperson,
+                 person.name,
+                 person.gender,
+                 person.born,
+                 person.lifespan,
+                 person.fatherid,
+                 person.motherid,
+                 person.relationships,
+                 person.last_modified))
             conn.commit()
             conn.close()
         #
         except sqlite3.Error as e:
-            app.write_log('error', "SQLite INSERT person error occurred: " + e.args[0])
+            app.write_log(
+                'error',
+                "SQLite INSERT person error occurred: " +
+                e.args[0])
 
     def _get_person(self, personid, referenceid):
         """ Get the most recent persisted person with personid and referenceid from the SQLite database
@@ -138,12 +157,16 @@ class Database:
         cursor: Cursor = conn.cursor()
         sql = 'SELECT * FROM persons WHERE personid = ? AND referenceid = ? ORDER BY timestamp DESC'
         try:
-            cursor.execute( sql, (personid, referenceid))
-            rows = [dict(row) for row in cursor.fetchall()] # convert sqlite3.Row
+            cursor.execute(sql, (personid, referenceid))
+            rows = [dict(row)
+                    for row in cursor.fetchall()]  # convert sqlite3.Row
             return rows
         #
         except sqlite3.Error as e:
-            app.write_log('error', "SQLite INSERT person error occurred:" + e.args[0])
+            app.write_log(
+                'error',
+                "SQLite INSERT person error occurred:" +
+                e.args[0])
             return None
 
     def get_persons(self, referenceid):
@@ -158,14 +181,17 @@ class Database:
         cursor: Cursor = conn.cursor()
         sql = 'SELECT * FROM persons WHERE referenceid = ? ORDER BY timestamp DESC'
         try:
-            cursor.execute( sql, [referenceid])
-            rows = [dict(row) for row in cursor.fetchall()] # convert sqlite3.Row
+            cursor.execute(sql, [referenceid])
+            rows = [dict(row)
+                    for row in cursor.fetchall()]  # convert sqlite3.Row
             return rows
         #
         except sqlite3.Error as e:
-            app.write_log('error', "SQLite INSERT person error occurred:" + e.args[0])
+            app.write_log(
+                'error',
+                "SQLite INSERT person error occurred:" +
+                e.args[0])
             return None
-
 
     def check_person(self, personid, referenceid):
         """ check if the person is in the database
@@ -193,34 +219,69 @@ class Database:
                 # compare downloaded person data to the persisted person data
                 row = rows[0]
                 if person.status_list != row['status_list']:
-                    chgs.append('Status of HTTP codes has changed to ' + str(person.status_list) + '.')
+                    chgs.append('Status of HTTP codes has changed to ' +
+                                str(person.status_list) + '.')
                 if person.generation != row['generation']:
-                    chgs.append('The generation number has changed to ' + str(person.generation) + '.')
+                    chgs.append(
+                        'The generation number has changed to ' + str(person.generation) + '.')
                 if person.name != row['name']:
-                    chgs.append('The name has changed from ' + row['name'] + ' to ' + person.name + '.')
+                    chgs.append(
+                        'The name has changed from ' +
+                        row['name'] +
+                        ' to ' +
+                        person.name +
+                        '.')
                 if person.gender != row['gender']:
-                    chgs.append('The gender has changed to ' + person.gender + '.')
+                    chgs.append(
+                        'The gender has changed to ' +
+                        person.gender +
+                        '.')
                 if person.born != row['born']:
-                    chgs.append('The birth date has changed from ' + row['born'] + ' to ' + person.born + '.')
+                    chgs.append(
+                        'The birth date has changed from ' +
+                        row['born'] +
+                        ' to ' +
+                        person.born +
+                        '.')
                 if person.lifespan != row['lifespan']:
-                    chgs.append('The lifespan has changed from ' + row['lifespan'] + ' to ' + person.lifespan + '.')
+                    chgs.append(
+                        'The lifespan has changed from ' +
+                        row['lifespan'] +
+                        ' to ' +
+                        person.lifespan +
+                        '.')
                 if person.fatherid != row['fatherid']:
-                    chgs.append('The fatherid has changed from ' + row['fatherid'] + ' to ' + person.fatherid + '.')
+                    chgs.append(
+                        'The fatherid has changed from ' +
+                        row['fatherid'] +
+                        ' to ' +
+                        person.fatherid +
+                        '.')
                 if person.motherid != row['motherid']:
-                    chgs.append('The motherid has changed from ' + row['motherid'] + ' to ' + person.motherid + '.')
+                    chgs.append(
+                        'The motherid has changed from ' +
+                        row['motherid'] +
+                        ' to ' +
+                        person.motherid +
+                        '.')
                 if person.relationships != row['relationships']:
-                    chgs.append('Change in relationships: father, mother, spouse, or children.')
+                    chgs.append(
+                        'Change in relationships: father, mother, spouse, or children.')
                 if person.last_modified != row['last_modified']:
                     chgs.append('Change(s) in the persons change history.')
                 if chgs:
                     person.status = 'modified'
-                    chgs.insert(0, 'Changes detected in object: ' + person.personid)
-                    self._insert_person(person) # persist modified object
+                    chgs.insert(
+                        0, 'Changes detected in object: ' + person.personid)
+                    self._insert_person(person)  # persist modified object
             return chgs
 
         elif person.status == 'created':
-            self._insert_person(person) # persist new object in database
-            return ['Created person object ('+person.personid+') in database.']
+            self._insert_person(person)  # persist new object in database
+            return [
+                'Created person object (' +
+                person.personid +
+                ') in database.']
 
         elif person.status == 'deleted':
             rows = self._get_person(person.personid, person.referenceid)
@@ -238,13 +299,24 @@ class Database:
                 person.relationships = row['relationships']
                 person.last_modified = row['last_modified']
             self._insert_person(person)  # persist deleted object
-            return ['Added copy of deleted person object ('+person.personid+') in database.']
+            return [
+                'Added copy of deleted person object (' +
+                person.personid +
+                ') in database.']
 
         else:
-            app.write_log('error', 'Illegal state in person object: '+ person.status)
+            app.write_log(
+                'error',
+                'Illegal state in person object: ' +
+                person.status)
             return []
 
-    def persist_session(self, timestamp, referenceid, person_count, change_log):
+    def persist_session(
+            self,
+            timestamp,
+            referenceid,
+            person_count,
+            change_log):
         """ persist session data
             Args:
                  timestamp (int):    timestamp for all data in the current session
@@ -260,20 +332,30 @@ class Database:
         """
         try:
             dt_object = datetime.fromtimestamp(timestamp)
-            status = 'Timestamp: '+dt_object.strftime("%Y-%m-%d %H:%M:%S")+'. Ancestors for ID: '+referenceid
+            status = 'Timestamp: ' + \
+                dt_object.strftime("%Y-%m-%d %H:%M:%S") + '. Ancestors for ID: ' + referenceid
             if change_log:
-                status += '. Found '+str(len(change_log))+' changes in ancestors.'
+                status += '. Found ' + \
+                    str(len(change_log)) + ' changes in ancestors.'
             else:
                 status += '. Nothing has changed.'
             app.write_log('info', status)
             for change in change_log:
                 app.write_log('info', change)
-            cursor.execute( sql, (timestamp, person_count, status, json.dumps(change_log)))
+            cursor.execute(
+                sql,
+                (timestamp,
+                 person_count,
+                 status,
+                 json.dumps(change_log)))
             conn.commit()
             conn.close()
         #
         except sqlite3.Error as e:
-            app.write_log('error', "SQLite INSERT session error occurred:" + e.args[0])
+            app.write_log(
+                'error',
+                "SQLite INSERT session error occurred:" +
+                e.args[0])
 
     def check_integrity(self):
         """
@@ -285,15 +367,19 @@ class Database:
         conn.row_factory = sqlite3.Row
         cursor: Cursor = conn.cursor()
         try:
-            cursor.execute( 'pragma integrity_check;' )
-            rows = [dict(row) for row in cursor.fetchall()] # convert sqlite3.Row
+            cursor.execute('pragma integrity_check;')
+            rows = [dict(row)
+                    for row in cursor.fetchall()]  # convert sqlite3.Row
             status = rows[0]['integrity_check']
             if status == 'ok':
                 return True
             return False
         #
         except sqlite3.Error as e:
-            app.write_log('error', "SQLite INSERT person error occurred:" + e.args[0])
+            app.write_log(
+                'error',
+                "SQLite INSERT person error occurred:" +
+                e.args[0])
             return False
 
 
@@ -309,7 +395,7 @@ class TestSQLiteDatabase(unittest.TestCase):
 
     def test_sqlite_integrity(self):
         self.db = Database()
-        self.assertTrue( self.db.check_integrity() )
+        self.assertTrue(self.db.check_integrity())
 
 
 if __name__ == "__main__":
