@@ -58,8 +58,8 @@ class Database:
 	                gender        TEXT,
 	                born          TEXT,
 	                lifespan      TEXT,
-	                fatherid      TEXT,
-	                motherid      TEXT,
+	                fatherids     TEXT,
+	                motherids     TEXT,
 	                relationships TEXT,
 	                last_modified INTEGER);
 	                """)
@@ -78,7 +78,7 @@ class Database:
                 AS
                     SELECT
                         -- list of ancestors in the persisted data
-                        generation, name, gender, lifespan, personid, fatherid, motherid, referenceid, timestamp
+                        generation, name, gender, lifespan, personid, fatherids, motherids, referenceid, timestamp
                     FROM persons
                     WHERE referenceid = (
                         SELECT referenceid FROM (
@@ -114,7 +114,7 @@ class Database:
             INSERT INTO persons
                 (personid, timestamp, referenceid, status_list, status,
                  generation, fsperson, name, gender, born,
-                 lifespan, fatherid, motherid, relationships, last_modified)
+                 lifespan, fatherids, motherids, relationships, last_modified)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         try:
@@ -131,8 +131,8 @@ class Database:
                  person.gender,
                  person.born,
                  person.lifespan,
-                 person.fatherid,
-                 person.motherid,
+                 person.fatherids,
+                 person.motherids,
                  person.relationships,
                  person.last_modified))
             conn.commit()
@@ -250,19 +250,19 @@ class Database:
                         ' to ' +
                         person.lifespan +
                         '.')
-                if person.fatherid != row['fatherid']:
+                if (person.fatherids) != row['fatherids']:
                     chgs.append(
-                        'The fatherid has changed from ' +
-                        row['fatherid'] +
+                        'The fatherids have changed from ' +
+                        row['fatherids'] +
                         ' to ' +
-                        person.fatherid +
+                        person.fatherids +
                         '.')
-                if person.motherid != row['motherid']:
+                if person.motherids != row['motherids']:
                     chgs.append(
-                        'The motherid has changed from ' +
-                        row['motherid'] +
+                        'The motherids have changed from ' +
+                        row['motherids'] +
                         ' to ' +
-                        person.motherid +
+                        person.motherids +
                         '.')
                 if person.relationships != row['relationships']:
                     chgs.append(
@@ -294,8 +294,8 @@ class Database:
                 person.gender = row['gender']
                 person.born = row['born']
                 person.lifespan = row['lifespan']
-                person.fatherid = row['fatherid']
-                person.motherid = row['motherid']
+                person.fatherids = row['fatherids']
+                person.motherids = row['motherids']
                 person.relationships = row['relationships']
                 person.last_modified = row['last_modified']
             self._insert_person(person)  # persist deleted object

@@ -58,6 +58,15 @@ class PersonObj:
             fsperson,
             timestamp,
             fsperson_changes):
+
+        def get_list(key, list):
+            """ get dictionary values with key from list """
+            mylist = []
+            for dic in list:
+                if key in dic:
+                    mylist.append(dic[key])
+            return json.dumps(mylist, sort_keys=True) # encoded, filtered and sorted json list
+
         #
         # parameters
         self.personid = personid
@@ -74,10 +83,12 @@ class PersonObj:
             self.gender = read_nested_dict(disp, "gender")
             self.born = read_nested_dict(disp, "birthDate")
             self.lifespan = read_nested_dict(disp, "lifespan")
+
             # FamilySearch.childAndParentsRelationships.person1(person2)
             parents = self.get_parents(fsperson)
-            self.fatherid = parents["father"]
-            self.motherid = parents["mother"]
+            self.fatherids = get_list("father", parents)
+            self.motherids = get_list("mother", parents)
+
             # FamilySearch.person.relationships(list) for person
             relationships = read_nested_dict(fsperson, "relationships")
             relationships_asc = sorted(relationships, key=lambda k: k['id'])
@@ -87,8 +98,8 @@ class PersonObj:
             self.gender = None
             self.born = None
             self.lifespan = None
-            self.fatherid = None
-            self.motherid = None
+            self.fatherids = []
+            self.motherids = []
             self.relationships = None
         if fsperson_changes is not None:
             # FamilySearch change history(dict) for person
@@ -97,28 +108,32 @@ class PersonObj:
             self.last_modified = None
 
     def get_parents(self, fsperson):
-        """ read father and mother from family search person dictionary
+        """ read father(s) and mother(s) from family search person dictionary
             Args:
                 fsperson (dict): family search dictionary downloaded for the person id
             Return:
-                (dict):          {"father": "abc", "mother": "def"}
+                (list):          ["father": "abc", "father": "def", "mother": "hgi"]
         """
         try:
+            parents = []
             if "childAndParentsRelationships" in fsperson:
                 for rel in fsperson["childAndParentsRelationships"]:
-                    father = rel["parent1"]["resourceId"] if "parent1" in rel else None
-                    mother = rel["parent2"]["resourceId"] if "parent2" in rel else None
                     child = rel["child"]["resourceId"] if "child" in rel else None
                     if child == self.personid:
-                        return {"father": father, "mother": mother}
-            return {"father": None, "mother": None}
+                        father = rel["parent1"]["resourceId"] if "parent1" in rel else None
+                        if father is not None:
+                            parents.append({'father': father}) # biological, adoptive, etc.
+                        mother = rel["parent2"]["resourceId"] if "parent2" in rel else None
+                        if mother is not None:
+                            parents.append({'mother': mother}) # biological, adoptive, etc.
+            return parents
         except Exception as err:
             write_log(
                 'error',
                 "Exception(1): key '" +
                 err.args[0] +
                 "' not found in FS.childAndParentsRelationships.")
-            return {"father": None, "mother": None}
+            return []
 
     def has_bad_requests(self):
         """ check for HTTP error code 429: too many requests
@@ -307,6 +322,9 @@ def checkmyancestors(args):
             todo['referenceid'],
             timestamp,
             fs)
+        if (person.personid in checklist):
+            write_log('info', 'Circular reference encountered for person ID: '+person.personid+"\nStopped query.")
+            break
         checklist.append(person.personid)
         if db.check_person(person.personid, person.referenceid) == False:
             person.status = 'created'
@@ -321,17 +339,19 @@ def checkmyancestors(args):
                   ', Name=' + person.name + ' (' + person.lifespan + ')')
         person_count += 1
         # check person's father
-        if ((person.fatherid is not None) and
-                ((args.type == 'bioline') or (args.type == 'patriline'))):
-            todolist.append({'personid': person.fatherid,
+        for fatherid in json.loads(person.fatherids):
+            if ((args.type == 'bioline') or (args.type == 'patriline')):
+                todolist.append(
+                            {'personid': fatherid,
                              'generation': person.generation + 1,
                              'referenceid': reference_id})
         # check person's mother
-        if ((person.motherid is not None) and
-                ((args.type == 'bioline') or (args.type == 'matriline'))):
-            todolist.append({'personid': person.motherid,
-                             'generation': person.generation + 1,
-                             'referenceid': reference_id})
+        for motherid in json.loads(person.motherids):
+            if ((args.type == 'bioline') or (args.type == 'matriline')):
+                todolist.append(
+                    {'personid': motherid,
+                     'generation': person.generation + 1,
+                     'referenceid': reference_id})
     verify_data(reference_id, checklist)
     db.persist_session(timestamp, reference_id, person_count, changes)
 
