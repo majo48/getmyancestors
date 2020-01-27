@@ -10,6 +10,8 @@ scratchpad.py
 
 .idea
 
+docs/
+
 # virtualenv
 .venv
 venv/
