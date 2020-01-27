@@ -59,13 +59,19 @@ class PersonObj:
             timestamp,
             fsperson_changes):
 
-        def get_list(key, list):
-            """ get dictionary values with key from list """
+        def get_list(momordad, parents):
+            """ get dictionary keys with momordad from parents
+                Args:
+                    momordad (str): 'father' or 'mother'
+                    parents (dict): {'abc': 'father', 'def': 'father', 'ghi': 'mother'}
+                Return:
+                    (list): ['abc', 'def'] or ['ghi']
+            """
             mylist = []
-            for dic in list:
-                if key in dic:
-                    mylist.append(dic[key])
-            return json.dumps(mylist, sort_keys=True) # encoded, filtered and sorted json list
+            for parentkey, parentvalue in parents.items():
+                if momordad == parentvalue:
+                    mylist.append(parentkey)
+            return json.dumps(mylist, sort_keys=True) # encoded, filtered, unique and sorted json list
 
         #
         # parameters
@@ -112,20 +118,20 @@ class PersonObj:
             Args:
                 fsperson (dict): family search dictionary downloaded for the person id
             Return:
-                (list):          ["father": "abc", "father": "def", "mother": "hgi"]
+                (dict):          {"abc": "father", "def": "father", "hgi": "mother"}
         """
         try:
-            parents = []
+            parents = {}
             if "childAndParentsRelationships" in fsperson:
                 for rel in fsperson["childAndParentsRelationships"]:
                     child = rel["child"]["resourceId"] if "child" in rel else None
                     if child == self.personid:
                         father = rel["parent1"]["resourceId"] if "parent1" in rel else None
                         if father is not None:
-                            parents.append({'father': father}) # biological, adoptive, etc.
+                            parents[father] = 'father' # biological, adoptive, etc.
                         mother = rel["parent2"]["resourceId"] if "parent2" in rel else None
                         if mother is not None:
-                            parents.append({'mother': mother}) # biological, adoptive, etc.
+                            parents[mother] = 'mother' # biological, adoptive, etc.
             return parents
         except Exception as err:
             write_log(
@@ -295,6 +301,7 @@ def checkmyancestors(args):
     now = datetime.now()
     timestamp = int(datetime.timestamp(now))
     debug_app = (args.debug == 'on')
+
     # objects
     db = dbm.Database()  # SQLlite database
     fs = sem.Session(args.username, args.password, timeout=10)  # FamilySearch
@@ -302,19 +309,27 @@ def checkmyancestors(args):
         write_log('info', "Failed to login as user: " + args.username)
         return
     write_log('info', "Successfully logged in as user: " + args.username)
+
     # reference_id
     reference_id = fs.fid
     if args.individual is not None:
         reference_id = args.individual
+
     # initialize loop
     checklist = []
     changes = []
     person_count = 0
     todolist = []
-    todolist.append({'personid': reference_id,
-                     'generation': 0, 'referenceid': reference_id})
+    todolist.append(
+        {'personid': reference_id,
+         'generation': 0,
+         'referenceid': reference_id,
+         'childid': 'undefined'})
+
+    # loop thru all ancestors in the list
     while todolist:
-        # loop thru all ancestors in the list
+
+        # get person data from FS
         todo = todolist.pop(0)
         person = get_person_object(
             todo['personid'],
@@ -322,10 +337,23 @@ def checkmyancestors(args):
             todo['referenceid'],
             timestamp,
             fs)
+
+        # check for circular references
         if (person.personid in checklist):
-            write_log('info', 'Circular reference encountered for person ID: '+person.personid+"\nStopped query.")
-            break
+            write_log('info',
+                'Circular reference encountered for person ID: '+person.personid+". Parent of: "+todo['childid']+".")
+            if checklist.count(person.personid)>2:
+                write_log('info', 'Circular reference counted more than twice. Stopped query.')
+                break
         checklist.append(person.personid)
+
+        # check lifespan
+        if (person.lifespan[0:4].isdigit()):
+            year = int(person.lifespan[0:4])
+            if year < 1600:
+                write_log('info', 'Reached time limit of 1600 A.D. Stopped query.')
+                break # anything older than 1600 is speculation, not fact
+
         if db.check_person(person.personid, person.referenceid) == False:
             person.status = 'created'
         # check HTTP status codes
@@ -333,25 +361,33 @@ def checkmyancestors(args):
             break
         if person.is_unreachable():
             person.status = 'deleted'
+
         # persist person to database
         changes = changes + db.persist_person(person)
-        write_log('info', 'Person: ID=' + person.personid +
-                  ', Name=' + person.name + ' (' + person.lifespan + ')')
+        write_log('info',
+                  'Generation: '+str(person.generation)+', '+
+                  'Person: ID='+person.personid+', Name='+person.name+' ('+person.lifespan+'), '+
+                  'Parent of '+todo['childid']+'.')
         person_count += 1
+
         # check person's father
         for fatherid in json.loads(person.fatherids):
             if ((args.type == 'bioline') or (args.type == 'patriline')):
                 todolist.append(
-                            {'personid': fatherid,
-                             'generation': person.generation + 1,
-                             'referenceid': reference_id})
+                    {'personid': fatherid,
+                     'generation': person.generation + 1,
+                     'referenceid': reference_id,
+                     'childid': person.personid})
+
         # check person's mother
         for motherid in json.loads(person.motherids):
             if ((args.type == 'bioline') or (args.type == 'matriline')):
                 todolist.append(
                     {'personid': motherid,
                      'generation': person.generation + 1,
-                     'referenceid': reference_id})
+                     'referenceid': reference_id,
+                     'childid': person.personid})
+
     verify_data(reference_id, checklist)
     db.persist_session(timestamp, reference_id, person_count, changes)
 
