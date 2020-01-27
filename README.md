@@ -6,9 +6,10 @@ getmyancestors (forked)
   - API change(?) for "childAndParentsRelationships": replace father with parent1, mother with parent2
   - Tested on a MacBook OSX 10.11.6
 - Change Nr.2 : Updated README.MD for Mac OSX fully qualified filenames.
-- Plan: 
+- Change Nr.3: 
   - Lists (database) of ancestors, including the last change dates of the source records.
   - Comparison of lists, enables users to detect changed, new and/or deleted ancestors in familysearch.org.
+  - Plausibility tests (circular references)
   - 3 types of ancestors (choices):
     - Patriline ("father line") is a person's father, and additional ancestors, as traced only through males. 
     - Matriline ("mother line") is a person's mother, and additional ancestors, as traced only through females.
