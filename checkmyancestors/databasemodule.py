@@ -219,60 +219,39 @@ class Database:
                 # compare downloaded person data to the persisted person data
                 row = rows[0]
                 if person.status_list != row['status_list']:
-                    chgs.append('Status of HTTP codes has changed to ' +
-                                str(person.status_list) + '.')
+                    chgs.append(
+                        'Status of HTTP codes has changed to ' + str(person.status_list) + '.')
                 if person.generation != row['generation']:
                     chgs.append(
                         'The generation number has changed to ' + str(person.generation) + '.')
                 if person.name != row['name']:
                     chgs.append(
-                        'The name has changed from ' +
-                        row['name'] +
-                        ' to ' +
-                        person.name +
-                        '.')
+                        'The name has changed from ' + str(row['name']) + ' to ' + str(person.name) + '.')
                 if person.gender != row['gender']:
                     chgs.append(
-                        'The gender has changed to ' +
-                        person.gender +
-                        '.')
+                        'The gender has changed to ' + str(person.gender) + '.')
                 if person.born != row['born']:
                     chgs.append(
-                        'The birth date has changed from ' +
-                        row['born'] +
-                        ' to ' +
-                        person.born +
-                        '.')
+                        'The birth date has changed from ' + str(row['born']) + ' to ' + str(person.born) + '.')
                 if person.lifespan != row['lifespan']:
                     chgs.append(
-                        'The lifespan has changed from ' +
-                        row['lifespan'] +
-                        ' to ' +
-                        person.lifespan +
-                        '.')
+                        'The lifespan has changed from ' + str(row['lifespan']) + ' to ' + str(person.lifespan) + '.')
                 if (person.fatherids) != row['fatherids']:
                     chgs.append(
-                        'The fatherids have changed from ' +
-                        row['fatherids'] +
-                        ' to ' +
-                        person.fatherids +
-                        '.')
+                        'The fatherids have changed from ' + str(row['fatherids']) + ' to ' + str(person.fatherids) + '.')
                 if person.motherids != row['motherids']:
                     chgs.append(
-                        'The motherids have changed from ' +
-                        row['motherids'] +
-                        ' to ' +
-                        person.motherids +
-                        '.')
+                        'The motherids have changed from ' + str(row['motherids']) + ' to ' + str(person.motherids) + '.')
                 if person.relationships != row['relationships']:
                     chgs.append(
                         'Change in relationships: father, mother, spouse, or children.')
                 if person.last_modified != row['last_modified']:
-                    chgs.append('Change(s) in the persons change history.')
+                    chgs.append(
+                        'Change(s) in the persons change history.')
                 if chgs:
                     person.status = 'modified'
                     chgs.insert(
-                        0, 'Changes detected in object: ' + person.personid)
+                        0, 'Changes detected in object: ' + str(person.personid))
                     self._insert_person(person)  # persist modified object
             return chgs
 

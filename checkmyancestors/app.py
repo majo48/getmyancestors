@@ -390,6 +390,7 @@ def checkmyancestors(args):
 
     verify_data(reference_id, checklist)
     db.persist_session(timestamp, reference_id, person_count, changes)
+    write_log('info', 'End of query, '+str(len(checklist))+' persons found.')
 
 # ----------
 
